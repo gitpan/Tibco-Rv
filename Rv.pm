@@ -5,7 +5,7 @@ use vars qw/ $VERSION $TIBRV_VERSION_RELEASE /;
 
 BEGIN
 {
-   $VERSION = '1.03';
+   $VERSION = '1.04';
    $TIBRV_VERSION_RELEASE = 7;
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:

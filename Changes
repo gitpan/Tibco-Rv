@@ -42,3 +42,6 @@ Revision history for Perl extension Tibco::Rv.
 	- Fixed another Dispatcher bug
 	- test harness 90% done
 	- documentation touchups
+
+1.04  Wed Feb  5 16:07:24 CST 2003
+	- test harness done

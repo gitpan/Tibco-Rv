@@ -10,8 +10,12 @@ sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 my ( $rv ) = new Tibco::Rv;
 ( defined $rv ) ? &ok : &nok;
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },
+   transport => $rv->transport );
 
 my ( $transport ) = $rv->createTransport( description => 'myTransport' );
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },
+   transport => $transport );
 ( $transport->description eq 'myTransport' ) ? &ok : &nok;
 eval
 {

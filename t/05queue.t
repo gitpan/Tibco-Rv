@@ -2,14 +2,14 @@ $^W = 0;
 
 use Tibco::Rv;
 
-print "1..6\n";
+print "1..5\n";
 my ( $ok ) = 0;
 sub ok { print 'ok ' . ++ $ok . "\n" }
 sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 
 my ( $rv ) = new Tibco::Rv;
-( defined $rv ) ? &ok : &nok;
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },                 transport => $rv->transport );
 
 my ( $qg ) = new Tibco::Rv::QueueGroup;
 my ( $q1 ) = $qg->createQueue;

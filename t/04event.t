@@ -9,6 +9,7 @@ sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 
 my ( $rv ) = new Tibco::Rv;
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },                 transport => $rv->transport );
 pipe( *IN, *OUT );
 
 my ( $io, $timer, $listener );

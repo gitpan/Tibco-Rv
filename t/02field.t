@@ -2,17 +2,17 @@ $^W = 0;
 
 use Tibco::Rv;
 
-print "1..34\n";
+print "1..33\n";
 my ( $ok ) = 0;
 sub ok { print 'ok ' . ++ $ok . "\n" }
 sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 
 my ( $rv ) = new Tibco::Rv;
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },                 transport => $rv->transport );
+
 my ( $msg ) = $rv->createMsg;
 my ( $field ) = $msg->createField;
-( defined $field ) ? &ok : &nok;
-
 
 ( $field->name( 'myField' ) && $field->name eq 'myField' ) ? &ok : &nok;
 ( $field->id( 23 ) && $field->id eq 23 ) ? &ok : &nok;
