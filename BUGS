@@ -10,8 +10,11 @@ Gotta do something to abstract out createInbox ...
 
 
 Tibco::Rv::Msg
-Most of the get/set methods aren't implemented yet.  Kinda funny, since
-that's pretty much the whole point.
+Array get/set/update methods not implemented yet
+
+
+Tibco::Rv::Msg::DateTime
+doesn't seem to hold its nsec value ...  I think it's a bug w/tibrv
 
 
 Tibco::Rv::Dispatcher::DESTROY
@@ -40,7 +43,3 @@ tibrv 6.x support
 Not tried.  Maybe it'll work, maybe it won't.  I'm sure there'll have to be
 some special code to disable the secure daemon and virutal circuit code when
 running under tibrv 6.x.
-
-
-tibrv 5.x support
-Never gonna happen.

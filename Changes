@@ -8,7 +8,10 @@ Revision history for Perl extension Tibco::Rv.
 
 0.03  Fri Jan 17 12:24:34 CST 2003
 	- renamed Tibco::Rv from Tib::Rv
-	- Basic tibrv API almost completely implemented, with one glaring
+	- basic tibrv API almost completely implemented, with one glaring
 	  exception: functions to manipulate tibrvMsg fields (only
 	  addString( ) supported)
 	- useful factory methods and looping added to Tibco::Rv object
+
+0.90  Wed Jan 22 01:24:16 CST 2003
+	- implemented functions to manipulate tibrvMsg fields, except arrays

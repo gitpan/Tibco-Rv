@@ -13,6 +13,9 @@ tibrv_f64	T_NV
 tibrv_ipport16	T_IV
 tibrv_ipaddr32	T_IV
 tibrv_status	T_IV
+tibrvMsgField *	T_IV
+tibrvMsgDateTime *	T_IV
+const tibrvMsgDateTime *	T_IV
 tibrvIOType	T_IV
 tibrvQueueLimitPolicy	T_IV
 tibrvDispatchable	T_IV

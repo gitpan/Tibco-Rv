@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.03';
+$VERSION = '0.90';
 
 
 sub new

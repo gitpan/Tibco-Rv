@@ -2,7 +2,7 @@ package Tibco::Rv::Status;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.03';
+$VERSION = '0.90';
 
 
 use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;

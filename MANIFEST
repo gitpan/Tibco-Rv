@@ -10,6 +10,8 @@ typemap
 Rv.pm
 lib/Tibco/Rv/Status.pm
 lib/Tibco/Rv/Msg.pm
+lib/Tibco/Rv/Msg/Field.pm
+lib/Tibco/Rv/Msg/DateTime.pm
 lib/Tibco/Rv/Event.pm
 lib/Tibco/Rv/Listener.pm
 lib/Tibco/Rv/Timer.pm

@@ -2,7 +2,7 @@ package Tibco::Rv::Event;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.03';
+$VERSION = '0.90';
 
 
 use Tibco::Rv::Msg;
