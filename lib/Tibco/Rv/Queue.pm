@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -374,7 +374,7 @@ The default setting is 1.  0 is the lowest possible priority.
 
 Returns the C<$queue>'s event arrival hook.
 
-=item $queue->hook( sub { } )
+=item $queue->hook( sub { ... } )
 
 Set the C<$queue>'s event arrival hook to the given sub reference.  This
 hook is called every time an event is added to the queue.

@@ -22,5 +22,6 @@ lib/Tibco/Rv/Transport.pm
 t/01basic.t
 t/02field.t
 t/03message.t
-t/04events.t
-t/05dispatcher.t
+t/04event.t
+t/05queue.t
+t/06dispatcher.t

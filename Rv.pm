@@ -5,7 +5,7 @@ use vars qw/ $VERSION $TIBRV_VERSION_RELEASE /;
 
 BEGIN
 {
-   $VERSION = '1.02';
+   $VERSION = '1.03';
    $TIBRV_VERSION_RELEASE = 7;
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
@@ -368,7 +368,15 @@ happening, this call does nothing.
 
 =item $msg = $rv->createMsg
 
-Returns a new L<Msg|Tibco::Rv::Msg> object.
+   %args:
+      sendSubject => $sendSubject,
+      replySubject => $replySubject,
+      $fieldName1 => $stringValue1,
+      $fieldName2 => $stringValue2, ...
+
+Returns a new L<Msg|Tibco::Rv::Msg> object, with sendSubject and replySubject
+as given in %args (sendSubject and replySubject default to C<undef> if not
+specified).  Any other name => value pairs are added as string fields.
 
 =item $queueGroup = $rv->createQueueGroup
 
@@ -439,11 +447,6 @@ the Default Transport, and the given subject, callback arguments.
 
 Sends C<$msg> via the Default Transport.
 
-=item $rv->sendReply( $reply, $request )
-
-Sends the given C<$reply> message in response to the given C<$request> message
-via the Default Transport.
-
 =item $reply = $rv->sendRequest( $request, $timeout )
 
 Sends the given C<$request> message via the Default Transport, using the
@@ -451,9 +454,15 @@ given C<$timeout>.  C<$timeout> defaults to Tibco::Rv::WAIT_FOREVER if given
 as C<undef> or not specified.  Returns the C<$reply> message, or C<undef>
 if the timeout is reached before receiving a reply.
 
+=item $rv->sendReply( $reply, $request )
+
+Sends the given C<$reply> message in response to the given C<$request> message
+via the Default Transport.
+
 =item $inbox = $rv->createInbox
 
-Returns a new C<$inbox> subject.
+Returns a new C<$inbox> subject.  See L<Tibco::Rv::Msg|Tibco::Rv::Msg> for
+a more detailed discussion of sendRequest, sendReply, and createInbox.
 
 =item $rv->DESTROY
 
@@ -591,11 +600,11 @@ Maximum number of tokens a subject can contain
 
 =item Tibco::Rv::FALSE => 0
 
-Boolean true
+Boolean false
 
 =item Tibco::Rv::TRUE => 1
 
-Boolean false
+Boolean true
 
 =item Tibco::Rv::WAIT_FOREVER => -1.0
 

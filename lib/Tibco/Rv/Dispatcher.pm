@@ -2,12 +2,12 @@ package Tibco::Rv::Dispatcher;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 sub new
 {
-   my ( %proto ) = shift;
+   my ( $proto ) = shift;
    my ( %params ) = ( name => undef, dispatchable => $Tibco::Rv::Queue::DEFAULT,
       idleTimeout => Tibco::Rv::WAIT_FOREVER );
    my ( %args ) = @_;

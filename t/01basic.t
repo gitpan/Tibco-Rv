@@ -2,8 +2,15 @@ $^W = 0;
 
 use Tibco::Rv;
 
-print "1..1\n";
+print "1..3\n";
+my ( $ok ) = 0;
+sub ok { print 'ok ' . ++ $ok . "\n" }
+sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 
 my ( $rv ) = new Tibco::Rv;
-print "ok 1\n" if ( defined $rv );
+( defined $rv ) ? &ok : &nok;
+
+my ( $status ) = new Tibco::Rv::Status( status => Tibco::Rv::NO_MEMORY );
+( $status->toString eq 'Memory allocation failed' ) ? &ok : &nok;
+( $status->toNum == 19 ) ? &ok : &nok;
