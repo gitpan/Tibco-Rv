@@ -2,12 +2,15 @@ package Tibco::Rv::Cm::Listener;
 use base qw/ Tibco::Rv::Event /;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.11';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.12';
 
 
 use constant CANCEL => 1;
 use constant PERSIST => 0;
+
+
+@CARP_NOT = qw/ Tibco::Rv::Event /;
 
 
 sub new
@@ -82,35 +85,32 @@ Tibco::Rv::Cm::Listener - Tibco Certified Messaging Listener event object
 
 =head1 SYNOPSIS
 
-   fix ...
-
+   my ( $cmt ) = $rv->createCmTransport( ... );
    my ( $listener ) =
-      $rv->createListener( subject => 'ABC', callback => sub
+      $rv->createCmListener( transport => $cmt, subject => 'ABC',
+         callback => sub
    {
       my ( $msg ) = @_;
-      print "Listener got a message: $msg\n";
+      print "Listener got a message: $msg, from sender: ", $msg->CMSender,
+         ', sequence: ', $msg->CMSequence, "\n";
    } );
-
-   my ( $msg ) = $rv->createMessage( field => 'value' );
-   $listener->onEvent( $msg );
 
 =head1 DESCRIPTION
 
-fix ...
-
-A C<Tibco::Rv::Listener> monitors a subject for incoming messages and passes
-those messages along to a callback.  It is a subclass of
+A C<Tibco::Rv::Cm::Listener> monitors a subject for incoming messages and
+passes those messages along to a callback.  It is a subclass of
 L<Tibco::Rv::Event|Tibco::Rv::Event>, so Event methods are available to
 Listeners (documentation on Event methods are reproduced here for
 convenience).
+
+Certified Messaging ensures that messages will be recieved exactly once and
+in sequence.  See your TIB/Rendevous documentation for more information.
 
 =head1 CONSTRUCTOR
 
 =over 4
 
-=item $listener = new Tibco::Rv::Listener( %args )
-
-fix ...
+=item $listener = new Tibco::Rv::Cm::Listener( %args )
 
    %args:
       queue => $queue,
@@ -118,12 +118,12 @@ fix ...
       subject => $subject,
       callback => sub { ... }
 
-Creates a C<Tibco::Rv::Listener>.  If not specified, queue defaults to the
-L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">, transport defaults to the
-L<Intra-Process Transport|Tibco::Rv::Transport/"INTRA-PROCESS TRANSPORT">,
+Creates a C<Tibco::Rv::Cm::Listener>.  transport must be a
+L<Tibco::Rv::Cm::Transport|Tibco::Rv::Cm::Transport>.  If not specified,
+queue defaults to the L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">,
 subject defaults to the empty string, and callback defaults to:
 
-   sub { print "Listener received: @_\n" }
+   sub { print "cmListener received: @_\n" }
 
 A program registers interest in C<$subject> by creating a Listener.  Messages
 coming in on C<$subject> via C<$transport> are placed on the C<$queue>.
@@ -156,23 +156,50 @@ Returns the callback code reference.
 Trigger an event directly by passing C<$msg> to the Listener.  The C<$msg>
 will be processed as if it was triggered via the event queue.
 
-=item $listener->DESTROY
+=item $listener->DESTROY( $cancelAgreements )
 
 Cancels interest in this event.  Called automatically when C<$listener>
 goes out of scope.  Calling DESTROY more than once has no effect.
+C<$cancelAgreements> defaults to PERSIST.
 
-=item CANCEL/PERSIST constants ...
+If C<$cancelAgreements> is PERSIST, certified delivery agreements are left
+in effect, so senders will store messages.  If C<$cancelAgreements> is
+CANCEL, certified delivery agreements are cancelled, causing senders to
+delete all messages sent to this listener.
+
+=item $listener->setExplicitConfirm
+
+By default, certified listeners automatically confirm delivery when the
+callback returns.  By calling setExplicitConfirm, this behaviour is
+overridden.  Instead, you must explicitly confirm delivery by calling
+confirmMsg.
+
+=item $listener->confirmMsg( $msg )
+
+Explicitly confirm delivery of C<$msg> (see setExplicitConfirm).
+
+=back
+
+=head1 CONSTANTS
+
+=over 4
+
+=item Tibco::Rv::Cm::Listener::CANCEL => 1
+
+=item Tibco::Rv::Cm::Listener::PERSIST => 0
+
+See DESTROY for usage of these constants.
 
 =back
 
 =head1 OVERRIDING EVENT CALLBACK
 
 As an alternative to passing in a callback function to the constructor, there
-is another way to handle events.  You can subclass C<Tibco::Rv::Listener>
+is another way to handle events.  You can subclass C<Tibco::Rv::Cm::Listener>
 and override the onEvent method, as follows:
 
    package MyListener;
-   use base qw/ Tibco::Rv::Listener /;
+   use base qw/ Tibco::Rv::Cm::Listener /;
 
    sub new
    {
@@ -208,7 +235,7 @@ You can use your subclassed Listener as follows:
    use MyListener;
 
    my ( $rv ) = new Tibco::Rv;
-   my ( $transport ) = new Tibco::Rv::Transport;
+   my ( $transport ) = new Tibco::Rv::Cm::Transport( ... );
    my ( $myListener ) =
       new MyListener( transport => $transport, subject => 'ABC' );
    $rv->start;

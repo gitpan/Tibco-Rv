@@ -1,8 +1,8 @@
 package Tibco::Rv::Msg;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.11';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.12';
 
 
 use Inline with => 'Tibco::Rv::Inline';
@@ -46,6 +46,7 @@ use constant XML => 47;
 
 
 use Tibco::Rv::Msg::Field;
+@CARP_NOT = qw/ Tibco::Rv::Msg::Field /;
 
 
 use overload '""' => 'toString';

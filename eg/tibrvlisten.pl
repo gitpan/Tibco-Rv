@@ -7,7 +7,8 @@ die &usage unless ( GetOptions( "service=s" => \$args{service},
    "network=s" => \$args{network}, "daemon=s" => \$args{daemon} ) and @ARGV );
 
 
-my ( $rv ) = new Tibco::Rv( %args, description => $0 );
+my ( $rv ) = new Tibco::Rv( %args );
+$rv->transport->description( $0 );
 map { $rv->createListener( subject => $_, callback => sub {
    my ( $msg ) = shift;
    print Tibco::Rv::Msg::DateTime->now, ": subject=", $msg->sendSubject;

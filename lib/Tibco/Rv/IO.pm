@@ -2,13 +2,16 @@ package Tibco::Rv::IO;
 use base qw/ Tibco::Rv::Event /;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.03';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.04';
 
 
 use constant READ => 1;
 use constant WRITE => 2;
 use constant EXCEPTION => 4;
+
+
+@CARP_NOT = qw/ Tibco::Rv::Event /;
 
 
 sub new

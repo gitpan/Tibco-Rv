@@ -2,8 +2,11 @@ package Tibco::Rv::Listener;
 use base qw/ Tibco::Rv::Event /;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.03';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.04';
+
+
+@CARP_NOT = qw/ Tibco::Rv::Event /;
 
 
 sub new

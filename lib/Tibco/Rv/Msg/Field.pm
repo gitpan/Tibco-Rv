@@ -1,11 +1,12 @@
 package Tibco::Rv::Msg::Field;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.11';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.12';
 
 
 use Tibco::Rv::Msg::DateTime;
+@CARP_NOT = qw/ Tibco::Rv::Msg::DateTime /;
 
 
 my ( %defaults );

@@ -3,14 +3,6 @@ hooks.  It may work with various combinations of perl version and perl
 thread model (untested).
 
 
-Certified Messaging partially unimplemented
-impl/doco Tibco::Rv::Cm::Transport
-impl/doco Tibco::Rv::Cm::Msg
-impl/doco Tibco::Rv::Cm::Listener
-impl/doco Tibco::Rv createCmMsg, createCmTransport, createCmListener
-#### queue createCmListener, rv createCmListener impl/doco
-
-
 Fault Tolerance unimplemented
 
 
@@ -31,7 +23,16 @@ instead of ARG_CONFLICT as specified in the TIB/Rendezvous documentation.
 IO should probably take socketId => \*GLOB instead of a fileno
 
 
+New functions after 7.1 are not yet implemented:
+TibrvcmTransport_SetPublisherInactivityDiscardInterval
+tibrvcmTransport_SetTaskBacklogLimit
+
+
 Queue hook should maybe be set up like Event's onEvent callback?
+
+
+Cm::Transport reviewLedger callback should maybe be set up like Event's
+onEvent callback?  Perhaps only if $callback parameter is undef?
 
 
 Gotta do something to abstract out createInbox ...

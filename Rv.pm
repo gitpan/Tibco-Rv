@@ -1,8 +1,8 @@
 package Tibco::Rv;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.12';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.13';
 
 
 use Inline with => 'Tibco::Rv::Inline';
@@ -94,6 +94,8 @@ use constant NO_WAIT => 0.0;
 use Tibco::Rv::Status;
 use Tibco::Rv::QueueGroup;
 use Tibco::Rv::Cm::Transport;
+@CARP_NOT =
+   qw/ Tibco::Rv::Status Tibco::Rv::QueueGroup Tibco::Rv::Cm::Transport /;
 
 
 sub die
@@ -116,8 +118,8 @@ sub version
 sub new
 {
    my ( $proto ) = shift;
-   my ( %params ) = ( service => undef, network => undef, daemon => 'tcp:7500',
-      description => undef );
+   my ( %params ) =
+      ( service => undef, network => undef, daemon => 'tcp:7500' );
    my ( %args ) = @_;
    map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
       unless ( exists $params{$_} ) } keys %args;
@@ -330,10 +332,14 @@ L<Status Constants|"STATUS CONSTANTS"> (below).  The exception is of the form:
    %d: %s
 
 ... where '%d' is the status number, and '%s' is a description of the error.
+The file and line number where the error occurred is appended.
 
 All Tibco::Rv methods use this method to raise an exception when they
 encounter a TIB/Rendezvous error.  Use an C<eval { .. }; if ( $@ )> block
 around all Tibco::Rv code if you care about that sort of thing.
+
+To include a detailed stacktrace in the error message, include the string
+"MCarp=verbose" in the PERL5OPT environment variable (see L<Carp>).
 
 =item $ver = Tibco::Rv->version (or $ver = $rv->version)
 
@@ -489,28 +495,77 @@ a more detailed discussion of sendRequest, sendReply, and createInbox.
    %args:
       sendSubject => $sendSubject,
       replySubject => $replySubject,
+      CMTimeLimit => $CMTimeLimit,
       $fieldName1 => $stringValue1,
       $fieldName2 => $stringValue2, ...
 
-Returns a new L<CmMsg|Tibco::Rv::Cm::Msg> object, with sendSubject and
-replySubject as given in %args (sendSubject and replySubject default to
-C<undef> if not specified).  Any other name => value pairs are added as
+Returns a new L<cmMsg|Tibco::Rv::Cm::Msg> object, with sendSubject,
+replySubject, and CMTimeLimit as given in %args (these three values default
+to C<undef> if not specified).  Any other name => value pairs are added as
 string fields.
-
-... other args ... ??
 
 =item $cmTransport = $rv->createCmTransport( %args )
 
    %args:
       service => $service,
       network => $network,
-      daemon => $daemon
+      daemon => $daemon,
+      cmName => $cmName,
+      requestOld => $requestOld,
+      ledgerName => $ledgerName,
+      syncLedger => $syncLedger,
+      relayAgent => $relayAgent,
+      defaultCMTimeLimit => $defaulCMTimeLimit
 
-Returns a new L<CmTransport|Tibco::Rv::Cm::Transport> object, using the given
-service/network/daemon arguments.  These arguments can be C<undef> or
-not specified to use the default arguments.
+Returns a new L<cmTransport|Tibco::Rv::Cm::Transport> object.  If not
+specified, requestOld defaults to Tibco::Rv::FALSE, syncLedger defaults to
+Tibco::Rv::FALSE, and defaultCMTimeLimit defaults to 0 (no time limit).  If
+service/network/daemon parameters are not specified, the default transport
+is used, otherwise a new transport is created using the given
+service/network/daemon parameters.
 
-... plenty of other args ...
+cmName is the certified messaging correspondent name.  If cmName is C<undef>,
+then a unique, non-reusable name is generated for the duration of the object.
+If cmName is specified, it becomes a persistent correspondent identified by
+this name.
+
+If requestOld is Tibco::Rv::TRUE, then unacknowledged messages sent to
+this persistent correspondent name will be re-requested from senders.  If
+it is Tibco::Rv::TRUE, senders will not retain unacknowledged messages
+in their ledger files.
+
+If ledgerName is specified, then this transport will use a file-based
+ledger by that name.  Otherwise, a process-based ledger will be used.
+
+If syncLedger is Tibco::Rv::TRUE, operations that update the ledger file
+will not return until changes are written out to the storage medium.  If it
+is Tibco::Rv::TRUE, the operating system writes changes to the disk
+asynchronously.
+
+If relayAgent is specified, the transport will connect to the given rvrad.
+
+defaultCMTimeLimit is the number of seconds a certified sender is guaranteed
+to retain the message.  It may be overridden for each message.  It defaults
+to C<0>.  A time limit of 0 represents no time limit.
+
+=item createCmListener
+
+   %args:
+      queue => $queue,
+      transport => $transport,
+      subject => $subject,
+      callback => sub { ... }
+
+Returns a new L<cmListener|Tibco::Rv::Cm::Listener> object.  transport must
+be a L<Tibco::Rv::Cm::Transport|Tibco::Rv::Cm::Transport>.  If not specified,
+queue defaults to the L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">,
+subject defaults to the empty string, and callback defaults to:
+
+   sub { print "cmListener received: @_\n" }
+
+A program registers interest in C<$subject> by creating a Listener.  Messages
+coming in on C<$subject> via C<$transport> are placed on the C<$queue>.
+When C<$queue> dispatches such an event, it triggers the given callback.
 
 =item $rv->DESTROY
 
@@ -694,6 +749,14 @@ message.
 =item L<Tibco::Rv::Dispatcher>
 
 =item L<Tibco::Rv::Transport>
+
+=item L<Tibco::Rv::Msg>
+
+=item L<Tibco::Rv::Cm::Listener>
+
+=item L<Tibco::Rv::Cm::Transport>
+
+=item L<Tibco::Rv::Cm::Msg>
 
 =back
 

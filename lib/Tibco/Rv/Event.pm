@@ -1,12 +1,13 @@
 package Tibco::Rv::Event;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.11';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.12';
 
 
 use Tibco::Rv::Msg;
 use Tibco::Rv::Cm::Msg;
+@CARP_NOT = qw/ Tibco::Rv::Msg Tibco::Rv::Cm::Msg /;
 use Inline with => 'Tibco::Rv::Inline';
 use Inline C => 'DATA', NAME => __PACKAGE__,
    VERSION => $Tibco::Rv::Inline::VERSION;

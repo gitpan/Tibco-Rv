@@ -1,13 +1,14 @@
 package Tibco::Rv::Cm::Transport;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.11';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.12';
 
 
 use Tibco::Rv::Transport;
 use Tibco::Rv::Msg;
 use Tibco::Rv::Cm::Msg;
+@CARP_NOT = qw/ Tibco::Rv::Transport Tibco::Rv::Msg Tibco::Rv::Cm::Msg /;
 use Inline with => 'Tibco::Rv::Inline';
 use Inline C => 'DATA', NAME => __PACKAGE__,
    VERSION => $Tibco::Rv::Inline::VERSION;
@@ -237,30 +238,74 @@ Tibco::Rv::Cm::Transport - Tibco Certified Messaging transport object
 
 =head1 SYNOPSIS
 
-   #$transport = new Tibco::Rv::Cm::Transport;
+   my ( $cmt ) = $rv->createCmTransport( cmName => 'cmlisten',
+      ledgerName => 'cmlisten.ldg', requestOld => Tibco::Rv::TRUE );
+   $rv->createCmListener( subject => 'FOO', transport => $cmt, callback => sub
+   {
+      my ( $msg ) = shift;
+      print "Message from ", $msg->CMSender, '/', $msg->CMSequence, ": $msg\n";
+   } );
 
 =head1 DESCRIPTION
 
-A C<Tibco::Rv::Cm::Transport> object ...
+A C<Tibco::Rv::Cm::Transport> object represents a connection to a Rendezvous
+daemon, which routes messages to other Tibco programs.  With Certified
+Messaging, each message is guaranteed to be delievered exactly once and in
+sequence.
 
 =head1 CONSTRUCTOR
 
 =over 4
 
-=item $transport = new Tibco::Rv::Transport( %args )
+=item $transport = new Tibco::Rv::Cm::Transport( %args )
 
    %args:
-      ...
+      transport => $transport,
+      service => $service,
+      network => $network,
+      daemon => $daemon,
+      cmName => $cmName,
+      requestOld => $requestOld,
+      ledgerName => $ledgerName,
+      syncLedger => $syncLedger,
+      relayAgent => $relayAgent,
+      defaultCMTimeLimit => $defaulCMTimeLimit
 
-Creates a C<Tibco::Rv::Cm::Transport>.  If not specified ...
+Creates a C<Tibco::Rv::Cm::Transport>.  If not specified, requestOld defaults
+to Tibco::Rv::FALSE, syncLedger defaults to Tibco::Rv::FALSE, and
+defaultCMTimeLimit defaults to 0 (no time limit).  If transport is not
+specified, a new transport is created using the given service/network/daemon
+parameters (which default as usual).
+
+cmName is the certified messaging correspondent name.  If cmName is C<undef>,
+then a unique, non-reusable name is generated for the duration of the object.
+If cmName is specified, it becomes a persistent correspondent identified by
+this name.
+
+If requestOld is Tibco::Rv::TRUE, then unacknowledged messages sent to
+this persistent correspondent name will be re-requested from senders.  If
+it is Tibco::Rv::TRUE, senders will not retain unacknowledged messages
+in their ledger files.
+
+If ledgerName is specified, then this transport will use a file-based
+ledger by that name.  Otherwise, a process-based ledger will be used.
+
+If syncLedger is Tibco::Rv::TRUE, operations that update the ledger file
+will not return until changes are written out to the storage medium.  If it
+is Tibco::Rv::TRUE, the operating system writes changes to the disk
+asynchronously.
+
+If relayAgent is specified, the transport will connect to the given rvrad.
+
+defaultCMTimeLimit is the number of seconds a certified sender is guaranteed
+to retain the message.  It may be overridden for each message.  It defaults
+to C<0>.  A time limit of 0 represents no time limit.
 
 =back
 
 =head1 METHODS
 
 =over 4
-
-=item FIX ALL THESE
 
 =item $service = $transport->service
 
@@ -292,10 +337,46 @@ Tibco::Rv::Transport::DEFAULT_BATCH.
 
 =item $transport->batchMode( $batchMode )
 
-Sets the batchMode of C<$transport>.  See the L<Constants|"CONSTANTS">
-section below for a discussion of the available batchModes.  If Tibco::Rv
-was built against an Rv 6.x version, this method will die with a
-Tibco::Rv::VERSION_MISMATCH Status message.
+Sets the batchMode of C<$transport>.  See the
+L<Constants|Tibco::Rv::Transport/"CONSTANTS"> section for a discussion of
+the available batchModes.  If Tibco::Rv was built against an Rv 6.x version,
+this method will die with a Tibco::Rv::VERSION_MISMATCH Status message.
+
+=item $name = $transport->name
+
+Returns the correspondent name of C<$transport>.
+
+=item $ledgerName = $transport->ledgerName
+
+Returns the ledger name of C<$transport>, or C<undef> if not using a
+file-based ledger.
+
+=item $relayAgent = $transport->relayAgent
+
+Returns the relay agent of C<$transport>, or C<undef> if not using a
+a relay agent.
+
+=item $requestOld = $transport->requestOld
+
+Returns the requestOld flag of C<$transport>.
+
+=item $syncLedger = $transport->syncLedger
+
+Returns the syncLedger flag of C<$transport>.
+
+=item $transport = $transport->transport
+
+Returns the underlying L<Tibco::Rv::Transport|Tibco::Rv::Transport> object
+used by C<$transport>, a Tibco::Rv::Cm::Transport object.
+
+=item $defaultCMTimeLimit = $transport->defaultCMTimeLimit
+
+Returns the default certified messaging time limit C<$transport> will use
+for messages that otherwise do not have a time limit assigned.
+
+=item $transport->defaultCMTimeLimit( $defaultCMTimeLimit )
+
+Set the default certified messaging time limit for C<$transport>.
 
 =item $transport->send( $msg )
 
@@ -304,22 +385,22 @@ sendSubject.
 
 =item $reply = $transport->sendRequest( $request, $timeout )
 
-Sends C<$request> (a L<Tibco::Rv::Msg|Tibco::Rv::Msg>) and waits for a reply
-message.  This method blocks while waiting for a reply.  C<$timeout>
-specifies how long it should wait for a reply.  Using
-C<Tibco::Rv::WAIT_FOREVER> causes this method to wait indefinately for a
+Sends C<$request> (a L<Tibco::Rv::Cm::Msg|Tibco::Rv::Cm::Msg>) and waits
+for a reply message.  This method blocks while waiting for a reply.
+C<$timeout> specifies how long it should wait for a reply.  Using
+Tibco::Rv::WAIT_FOREVER causes this method to wait indefinately for a
 reply.
 
 If C<$timeout> is not specified (or C<undef>), then this method uses
-C<Tibco::Rv::WAIT_FOREVER>.
+Tibco::Rv::WAIT_FOREVER.
 
-If C<$timeout> is something other than C<Tibco::Rv::WAIT_FOREVER> and that
+If C<$timeout> is something other than Tibco::Rv::WAIT_FOREVER and that
 timeout is reached before receiving a reply, then this method returns
 C<undef>.
 
 =item $transport->sendReply( $reply, $request )
 
-Sends C<$reply> (a L<Tibco::Rv::Msg|Tibco::Rv::Msg>) in response to the
+Sends C<$reply> (a L<Tibco::Rv::Cm::Msg|Tibco::Rv::Cm::Msg>) in response to the
 C<$request> message.  This method extracts the replySubject from C<$request>,
 and uses it to send C<$reply>.
 
@@ -347,6 +428,64 @@ request message via the transport's sendRequest method.  The sendRequest
 method internally creates a listener and waits for the replying end to
 send a reply.
 
+=item $status = $transport->addListener( $cmName, $subject )
+
+Pre-register an anticipated listener named C<$cmName> on the given subject,
+so that certified messages sent on that subject will be stored in
+C<$transport>'s ledger.  Returns Tibco::Rv::NOT_PERMITTED if C<$cmName>
+has been disallowed by a call to disallowListener, otherwise returns
+Tibco::Rv::OK.
+
+=item $status = $transport->removeListener( $cmName, $subject )
+
+Unregister the listener listening on C<$subject> at correspondent named
+C<$cmName>, and free associated storage in C<$transport>'s ledger.  Returns
+Tibco::Rv::INVALID_SUBJECT if the correspondent named C<$cmName> does not
+receive certified delivery onC<$subject>, otherwise returns Tibco::Rv::OK.
+
+=item $transport->disallowListener( $cmName )
+
+Cancel certified delivery to all listeners at correspondent named C<$cmName>,
+and refuse subsequent certified delivery requests from that correspondent.
+
+=item $transport->allowListener( $cmName )
+
+Allow future certified delivery requests from correspondent named C<$cmName>,
+cancelling the effect of a previous call to disallowListener.
+
+=item $transport->removeSendState( $subject )
+
+Remove send state for given subject in C<$transport>'s ledger file.
+
+=item $status = $transport->sync
+
+Synchronize C<$transport>'s ledger file to its storage medium.  Returns
+Tibco::Rv::INVALID_ARG if C<$transport> does not have a ledger file,
+otherwise returns Tibco::Rv::OK.
+
+=item $transport->reviewLedger( $subject, $callback )
+
+Subject information from C<$transport>'s ledger file matching the given subject
+are passed to the given callback, which must be a subroutine reference
+(C<sub { ... }>).  The callback is called once for each subject that matches
+C<$subject> (i.e., wildcards are allowed).
+
+The subject information is passed to the callback as a
+L<Tibco::Rv::Msg|Tibco::Rv::Msg>.  See your TIB/Rendezvous documentation for
+more information on the fields in the Msg and what they mean.
+
+=item $status = $transport->connectToRelayAgent
+
+Connect C<$transport> to its designated relay agent.  Returns
+Tibco::Rv::INVALID_ARG if C<$transport> does not have a designated relay
+agent (otherwise returns Tibco::Rv::OK).
+
+=item $status = disconnectFromRelayAgent
+
+Disconnects C<$transport> from its designated relay agent.  Returns
+Tibco::Rv::INVALID_ARG if C<$transport> does not have a designated relay
+agent (otherwise returns Tibco::Rv::OK).
+
 =item $transport->DESTROY
 
 Destroy this connection to a TIB/Rendezvous daemon after flushing all
@@ -359,6 +498,8 @@ DESTROY more than once has no effect.
 =head1 SEE ALSO
 
 L<Tibco::Rv::Transport>
+
+L<Tibco::Rv::Cm::Msg>
 
 =head1 AUTHOR
 

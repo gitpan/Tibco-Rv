@@ -1,11 +1,12 @@
 package Tibco::Rv::QueueGroup;
 
 
-use vars qw/ $VERSION /;
-$VERSION = '1.03';
+use vars qw/ $VERSION @CARP_NOT /;
+$VERSION = '1.04';
 
 
 use Tibco::Rv::Queue;
+@CARP_NOT = qw/ Tibco::Rv::Queue /;
 use Inline with => 'Tibco::Rv::Inline';
 use Inline C => 'DATA', NAME => __PACKAGE__,
    VERSION => $Tibco::Rv::Inline::VERSION;

@@ -1,8 +1,8 @@
 package Tibco::Rv::Queue;
 
 
-use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '1.12';
+use vars qw/ $VERSION $DEFAULT @CARP_NOT /;
+$VERSION = '1.13';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -21,6 +21,8 @@ use Tibco::Rv::Timer;
 use Tibco::Rv::IO;
 use Tibco::Rv::Cm::Listener;
 use Tibco::Rv::Dispatcher;
+@CARP_NOT = qw/ Tibco::Rv::Listener Tibco::Rv::Timer Tibco::Rv::IO
+   Tibco::Rv::Cm::Listener Tibco::Rv::Dispatcher /;
 use Inline with => 'Tibco::Rv::Inline';
 use Inline C => 'DATA', NAME => __PACKAGE__,
    VERSION => $Tibco::Rv::Inline::VERSION;

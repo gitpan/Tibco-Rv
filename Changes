@@ -63,3 +63,8 @@ Revision history for Perl extension Tibco::Rv.
 	- disabled tests that broke on known issues (threading)
 	- created sample files in eg/
 	- partial implementation of Certified Messaging
+
+1.13 Tue Feb 22 21:09:41 PST 2005
+	- improved Tibco::Rv::die behaviour
+	- setup mailing list (perl-tibco-discuss@branewave.com)
+	- finished Certified Messaging documentation

@@ -19,3 +19,6 @@ See INSTALL for instructions on how to build and install Tibco::Rv.  Note:
 Perl must be built with threading.
 
 See eg/ (and t/) for code samples.
+
+Further information is available at http://branewave.com/perl including
+a mailing list (perl-tibco-discuss@branewave.com).
