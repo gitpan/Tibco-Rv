@@ -11,11 +11,6 @@ For instance, execute this command:
 
    $ export TIB_HOME=/usr/tibco
 
-If you are building against a 6.x release of TIB/Rendezvous, you must do
-the following in order to get Tibco::Rv to build properly:  In Rv.pm, line 9,
-change "$TIBRV_VERSION_RELEASE = 7;" to "$TIBRV_VERSION_RELEASE = 6;".  Do
-this before running "perl Makefile.PL".
-
 Execute the following commands (use the current version instead of "x.xx"):
 
    $ tar xvzf Tibco-Rv-x.xx.tar.gz

@@ -5,8 +5,7 @@ use vars qw/ $VERSION $TIBRV_VERSION_RELEASE /;
 
 BEGIN
 {
-   $VERSION = '1.10';
-   $TIBRV_VERSION_RELEASE = 7;
+   $VERSION = '1.11';
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
 TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
@@ -22,6 +21,11 @@ TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
    }
    die $env_err
       unless ( -d "$ENV{TIB_RV_HOME}/include" and -d "$ENV{TIB_RV_HOME}/lib" );
+   ( $TIBRV_VERSION_RELEASE ) =
+      scalar( `$ENV{TIB_RV_HOME}/bin/rvd --not-really-a-thing 2>/dev/null` )
+         =~ /Version (\d+)\./g;
+   die "Could not find rvd 6.x or 7.x"
+      unless ( $TIBRV_VERSION_RELEASE == 6 or $TIBRV_VERSION_RELEASE == 7 );
 }
 
 use Inline C => Config =>
@@ -816,12 +820,17 @@ tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
 tibrv_status tibrvTransport_Send( tibrvTransport transport, tibrvMsg message );
 tibrv_status tibrvTransport_SendReply( tibrvTransport transport,
    tibrvMsg reply, tibrvMsg request ); 
-#if TIBRV_VERSION_RELEASE >= 7
+#if TIBRV_VERSION_RELEASE < 7
+typedef unsigned int tibrvTransportBatchMode;
+#endif
 tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
    tibrvTransportBatchMode mode ); 
-#endif
 tibrv_status tibrvTransport_Destroy( tibrvTransport transport );
 
+#if TIBRV_VERSION_RELEASE < 7
+tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
+   tibrvTransportBatchMode mode ) { return TIBRV_OK; }
+#endif
 const char * tibrvcm_Version( );
 tibrv_status tibrvcmTransport_Destroy( tibrvcmTransport cmTransport );
 tibrv_status tibrvcmTransport_SetDefaultCMTimeLimit(

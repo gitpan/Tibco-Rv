@@ -15,7 +15,7 @@ TIBCO provides free copies of TIB/Rendezvous licensed for developer use only.
 Other usage requires a purchased license.  See www.tibco.com for complete
 information on TIB/Rendezvous licensing.
 
-See INSTALL for instructions on how to build and install Tibco::Rv, especially
-if you are building against a TIB/Rendezvous 6.x release.
+See INSTALL for instructions on how to build and install Tibco::Rv.  Note:
+Perl must be built with threading.
 
 See t/*.t for code samples.

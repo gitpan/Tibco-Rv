@@ -28,3 +28,4 @@ t/03message.t
 t/04event.t
 t/05queue.t
 t/06dispatcher.t
+META.yml                                 Module meta-data (added by MakeMaker)

@@ -53,3 +53,7 @@ Revision history for Perl extension Tibco::Rv.
 	- Transport get/set description behaviour now matches C API behaviour
 	- Queue get/set name behaviour now matches C API behaviour
 	- Msg::Field get/set name behaviour causes undef to be ''
+
+1.11  Mon Jan 12 20:44:14 CST 2004
+	- fix for building under tibrv 6.x
+	- automatically determine $TIBRV_VERSION_RELEASE from rvd
