@@ -2,6 +2,10 @@ package Tibco::Rv::Cm::Msg;
 use base qw/ Tibco::Rv::Msg /;
 
 
+use vars qw/ $VERSION /;
+$VERSION = '1.01';
+
+
 my ( %defaults );
 BEGIN
 {
@@ -44,7 +48,7 @@ sub _adopt
 sub _getCMValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::Msg_GetCMValues(
+   Tibco::Rv::Msg::Msg_GetCMValues(
       @$self{ qw/ id CMSender CMSequence CMTimeLimit / } );
 }
 
@@ -64,7 +68,7 @@ sub _setCMTimeLimit
 {
    my ( $self, $CMTimeLimit ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvMsg_SetCMTimeLimit( $self->{id}, $CMTimeLimit );
+      Tibco::Rv::Msg::tibrvMsg_SetCMTimeLimit( $self->{id}, $CMTimeLimit );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{CMTimeLimit} = $CMTimeLimit;
 }

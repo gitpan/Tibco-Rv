@@ -2,10 +2,13 @@ package Tibco::Rv::QueueGroup;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 use Tibco::Rv::Queue;
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 sub new
@@ -14,7 +17,7 @@ sub new
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = bless { id => undef }, $class;
 
-   my ( $status ) = Tibco::Rv::QueueGroup_Create( $self->{id} );
+   my ( $status ) = QueueGroup_Create( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    return $self;
@@ -40,8 +43,7 @@ sub createQueue
 sub add
 {
    my ( $self, $queue ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvQueueGroup_Add( $self->{id}, $queue->{id} );
+   my ( $status ) = tibrvQueueGroup_Add( $self->{id}, $queue->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -49,8 +51,7 @@ sub add
 sub remove
 {
    my ( $self, $queue ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvQueueGroup_Remove( $self->{id}, $queue->{id} );
+   my ( $status ) = tibrvQueueGroup_Remove( $self->{id}, $queue->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -72,8 +73,7 @@ sub poll
 sub timedDispatch
 {
    my ( $self, $timeout ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvQueueGroup_TimedDispatch( $self->{id}, $timeout );
+   my ( $status ) = tibrvQueueGroup_TimedDispatch( $self->{id}, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
    return new Tibco::Rv::Status( status => $status );
@@ -85,7 +85,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{id} );
 
-   my ( $status ) = Tibco::Rv::QueueGroup_Destroy( $self->{id} );
+   my ( $status ) = QueueGroup_Destroy( $self->{id} );
    delete $self->{id};
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -197,3 +197,25 @@ more than once has no effect.
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+
+tibrv_status tibrvQueueGroup_Add( tibrvQueueGroup queueGroup,
+   tibrvQueue queue );
+tibrv_status tibrvQueueGroup_Remove( tibrvQueueGroup queueGroup,
+   tibrvQueue queue );
+tibrv_status tibrvQueueGroup_TimedDispatch( tibrvQueueGroup queueGroup,
+   tibrv_f64 timeout );
+tibrv_status tibrvQueueGroup_Destroy( tibrvQueueGroup queueGroup );
+
+
+tibrv_status QueueGroup_Create( SV * sv_queueGroup )
+{
+   tibrvQueueGroup queueGroup = (tibrvQueueGroup)NULL;
+   tibrv_status status = tibrvQueueGroup_Create( &queueGroup );
+   sv_setiv( sv_queueGroup, (IV)queueGroup );
+   return status;
+}

@@ -2,7 +2,12 @@ package Tibco::Rv::Status;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
+
+
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;
@@ -22,7 +27,7 @@ sub new
 }
 
 
-sub toString { return Tibco::Rv::tibrvStatus_GetText( shift->{status} ) }
+sub toString { return tibrvStatus_GetText( shift->{status} ) }
 sub toNum { return shift->{status} }
 
 
@@ -85,3 +90,10 @@ numeric context.
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+
+const char * tibrvStatus_GetText( tibrv_status status );

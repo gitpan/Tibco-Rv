@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 sub new
@@ -21,7 +21,7 @@ sub new
 
    @$self{ qw/ transport subject / } = @params{ qw/ transport subject / };
 
-   my ( $status ) = Tibco::Rv::Event_CreateListener( $self->{id},
+   my ( $status ) = Tibco::Rv::Event::Event_CreateListener( $self->{id},
       $self->{queue}{id}, $self->{internal_msg_callback},
       $self->{transport}{id}, $self->{subject} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );

@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 
 use constant CANCEL => 1;
@@ -25,7 +25,7 @@ sub new
 
    @$self{ qw/ transport subject / } = @params{ qw/ transport subject / };
 
-   my ( $status ) = Tibco::Rv::cmEvent_CreateListener( $self->{id},
+   my ( $status ) = Tibco::Rv::Event::cmEvent_CreateListener( $self->{id},
       $self->{queue}{id}, $self->{internal_cmmsg_callback},
       $self->{transport}{id}, $self->{subject} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
@@ -41,7 +41,8 @@ sub subject { return shift->{subject} }
 sub setExplicitConfirm
 {
    my ( $self ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvcmEvent_SetExplicitConfirm( $self->{id} );
+   my ( $status ) =
+      Tibco::Rv::Event::tibrvcmEvent_SetExplicitConfirm( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -50,7 +51,7 @@ sub confirmMsg
 {
    my ( $self, $msg ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvcmEvent_ConfirmMsg( $self->{id}, $msg->{id} );
+      Tibco::Rv::Event::tibrvcmEvent_ConfirmMsg( $self->{id}, $msg->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -63,7 +64,7 @@ sub DESTROY
 
    $cancelAgreements = PERSIST unless ( defined $cancelAgreements );
    my ( $status ) =
-      Tibco::Rv::cmEvent_DestroyEx( $self->{id}, $cancelAgreements );
+      Tibco::Rv::Event::cmEvent_DestroyEx( $self->{id}, $cancelAgreements );
    delete $self->{id};
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 

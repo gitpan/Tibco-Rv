@@ -9,7 +9,7 @@ See LICENSE for copyright statement and licensing information.
 
 You need to download and install TIB/Rendezvous separately, from:
 
-http://www.tibco.com/solutions/products/active_enterprise/rv
+http://tibco.com/software/enterprise_backbone/rendezvous.jsp
 
 TIBCO provides free copies of TIB/Rendezvous licensed for developer use only.
 Other usage requires a purchased license.  See www.tibco.com for complete
@@ -18,4 +18,4 @@ information on TIB/Rendezvous licensing.
 See INSTALL for instructions on how to build and install Tibco::Rv.  Note:
 Perl must be built with threading.
 
-See t/*.t for code samples.
+See eg/ (and t/) for code samples.

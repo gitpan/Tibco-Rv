@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::DateTime;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 
 my ( %defaults );
@@ -28,7 +28,7 @@ sub new
    @$self{ qw/ sec nsec / } = @params{ qw/ sec nsec / };
 
    my ( $status ) =
-      Tibco::Rv::MsgDateTime_Create( @$self{ qw/ ptr sec nsec / } );
+      Tibco::Rv::Msg::MsgDateTime_Create( @$self{ qw/ ptr sec nsec / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    return $self;
@@ -66,7 +66,7 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::MsgDateTime_GetValues( @$self{ qw/ ptr sec nsec / } );
+   Tibco::Rv::Msg::MsgDateTime_GetValues( @$self{ qw/ ptr sec nsec / } );
 }
 
 
@@ -91,7 +91,7 @@ sub nsec
 sub _setSec
 {
    my ( $self, $sec ) = @_;
-   Tibco::Rv::MsgDateTime_SetSec( $self->{ptr}, $sec );
+   Tibco::Rv::Msg::MsgDateTime_SetSec( $self->{ptr}, $sec );
    return $self->{sec} = $sec;
 }
 
@@ -99,7 +99,7 @@ sub _setSec
 sub _setNsec
 {
    my ( $self, $nsec ) = @_;
-   Tibco::Rv::MsgDateTime_SetNsec( $self->{ptr}, $nsec );
+   Tibco::Rv::Msg::MsgDateTime_SetNsec( $self->{ptr}, $nsec );
    return $self->{nsec} = $nsec;
 }
 
@@ -109,7 +109,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{ptr} );
 
-   my ( $status ) = Tibco::Rv::MsgDateTime_Destroy( $self->{ptr} );
+   my ( $status ) = Tibco::Rv::Msg::MsgDateTime_Destroy( $self->{ptr} );
    delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }

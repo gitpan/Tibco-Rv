@@ -1,9 +1,14 @@
-Certified Messaging unimplemented
+Anything involving multiple threads segfaults, such as Dispatchers and Queue
+hooks.  It may work with various combinations of perl version and perl
+thread model (untested).
+
+
+Certified Messaging partially unimplemented
 impl/doco Tibco::Rv::Cm::Transport
 impl/doco Tibco::Rv::Cm::Msg
 impl/doco Tibco::Rv::Cm::Listener
 impl/doco Tibco::Rv createCmMsg, createCmTransport, createCmListener
-#### queue createCmListener?? impl/doco
+#### queue createCmListener, rv createCmListener impl/doco
 
 
 Fault Tolerance unimplemented
@@ -52,6 +57,16 @@ internally in the closure data, Tibco::Rv does not support the
 tibrvEvent_DestroyEx callback.  It could be hacked in by storing the DESTROY
 callback along with the onEvent callback in a hash or something, and passing
 both callbacks into the Perl constructor.
+
+
+Tibco::Rv::Queue::hook( sub { ... } )
+When setting a hook and a timer on the same queue, the hook callback begins,
+but then the timer callback begins and completes, and then it segfaults (the
+hook callback never completes).
+my ( $rv ) = new Tibco::Rv;
+$rv->hook( sub { print "hook\n" } );
+$rv->createTimer;
+$rv->start;
 
 
 tibrvMsg_SetHandlers

@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 sub new
@@ -20,7 +20,7 @@ sub new
 
    $self->{interval} = $params{interval};
 
-   my ( $status ) = Tibco::Rv::Event_CreateTimer( $self->{id},
+   my ( $status ) = Tibco::Rv::Event::Event_CreateTimer( $self->{id},
       $self->{queue}{id}, $self->{internal_nomsg_callback},
       $self->{interval} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
@@ -40,7 +40,7 @@ sub resetTimerInterval
 {
    my ( $self, $interval ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvEvent_ResetTimerInterval( $self->{id}, $interval );
+      Tibco::Rv::Event::tibrvEvent_ResetTimerInterval( $self->{id}, $interval );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{interval} = $interval;
 }

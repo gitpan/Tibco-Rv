@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -30,7 +30,8 @@ sub new
    $params{name} = '' unless ( defined $params{name} );
    @$self{ qw/ name id / } = @params{ qw/ name id / };
 
-   my ( $status ) = Tibco::Rv::MsgField_Create( @$self{ qw/ ptr name id / } );
+   my ( $status ) =
+      Tibco::Rv::Msg::MsgField_Create( @$self{ qw/ ptr name id / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    $self->bool( Tibco::Rv::FALSE );
 
@@ -66,7 +67,7 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::MsgField_GetValues(
+   Tibco::Rv::Msg::MsgField_GetValues(
       @$self{ qw/ ptr name id size count type data / } );
    if ( $self->{type} == Tibco::Rv::Msg::MSG )
    {
@@ -96,7 +97,7 @@ sub _setName
 {
    my ( $self, $name ) = @_;
    $name = '' unless ( defined $name );
-   Tibco::Rv::MsgField_SetName( $self->{ptr}, $name );
+   Tibco::Rv::Msg::MsgField_SetName( $self->{ptr}, $name );
    return $self->{name} = $name;
 }
 
@@ -111,7 +112,7 @@ sub id
 sub _setId
 {
    my ( $self, $id ) = @_;
-   Tibco::Rv::MsgField_SetId( $self->{ptr}, $id );
+   Tibco::Rv::Msg::MsgField_SetId( $self->{ptr}, $id );
    return $self->{id} = $id;
 }
 
@@ -204,7 +205,7 @@ sub _setIPAddr32
    my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
    $ipaddr32 = $d + ( $c << 8 ) + ( $b << 16 ) + ( $a << 24 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetElt( @$self{ qw/ ptr type / }, $ipaddr32 );
+      Tibco::Rv::Msg::MsgField_SetElt( @$self{ qw/ ptr type / }, $ipaddr32 );
    return $self->{data};
 }
 
@@ -214,7 +215,7 @@ sub _setDate
    my ( $self, $date ) = @_;
    @$self{ qw/ data type count / } = ( $date, Tibco::Rv::Msg::DATETIME, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetDateTime( $self->{ptr}, $self->{data}{ptr} );
+      Tibco::Rv::Msg::MsgField_SetDateTime( $self->{ptr}, $self->{data}{ptr} );
    return $self->{data};
 }
 
@@ -232,7 +233,7 @@ sub _setMsg
    my ( $self, $msg ) = @_;
    @$self{ qw/ data type count / } = ( $msg, Tibco::Rv::Msg::MSG, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetMsg( $self->{ptr}, $self->{data}{id} );
+      Tibco::Rv::Msg::MsgField_SetMsg( $self->{ptr}, $self->{data}{id} );
    return $self->{data};
 }
 
@@ -242,7 +243,7 @@ sub _setBuf
    my ( $self, $type, $buf ) = @_;
    @$self{ qw/ data type count / } = ( $buf, $type, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetBuf( $self->{ptr}, $type, $self->{data} );
+      Tibco::Rv::Msg::MsgField_SetBuf( $self->{ptr}, $type, $self->{data} );
    $self->{data} = substr( $self->{data}, 0, $self->{size} - 1 )
       if ( $type == Tibco::Rv::Msg::STRING );
    return $self->{data};
@@ -254,7 +255,7 @@ sub _setElt
    my ( $self, $type, $elt ) = @_;
    @$self{ qw/ data type count / } = ( $elt, $type, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetElt( @$self{ qw/ ptr type data / } );
+      Tibco::Rv::Msg::MsgField_SetElt( @$self{ qw/ ptr type data / } );
    return $self->{data};
 }
 
@@ -265,7 +266,7 @@ sub _setAry
    $ary = [ ] unless ( ref( $ary ) eq 'ARRAY' );
    @$self{ qw/ data type count / } = ( $ary, $type, $#$ary + 1 );
    $self->{size} =
-      Tibco::Rv::MsgField_SetAry( @$self{ qw/ ptr type data / } );
+      Tibco::Rv::Msg::MsgField_SetAry( @$self{ qw/ ptr type data / } );
    return $self->{data};
 }
 
@@ -275,7 +276,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{ptr} );
 
-   my ( $status ) = Tibco::Rv::MsgField_Destroy( $self->{ptr} );
+   my ( $status ) = Tibco::Rv::Msg::MsgField_Destroy( $self->{ptr} );
    delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }

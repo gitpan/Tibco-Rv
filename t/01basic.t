@@ -9,7 +9,8 @@ sub nok { print 'not ok ' . ++ $ok . "\n" }
 
 
 my ( $rv ) = new Tibco::Rv;
-$rv->createListener( subject => '_RV.WARN.>', callback => sub { },                 transport => $rv->transport );
+$rv->createListener( subject => '_RV.WARN.>', callback => sub { },
+   transport => $rv->transport );
 ( defined $rv ) ? &ok : &nok;
 
 my ( $status ) = new Tibco::Rv::Status( status => Tibco::Rv::NO_MEMORY );

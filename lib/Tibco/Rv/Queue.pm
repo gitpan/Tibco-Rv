@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '1.10';
+$VERSION = '1.12';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -21,6 +21,9 @@ use Tibco::Rv::Timer;
 use Tibco::Rv::IO;
 use Tibco::Rv::Cm::Listener;
 use Tibco::Rv::Dispatcher;
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 my ( @limitProperties, %defaults );
@@ -42,7 +45,7 @@ sub new
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   my ( $status ) = Tibco::Rv::Queue_Create( $self->{id} );
+   my ( $status ) = Queue_Create( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    $self->limitPolicy( @params{ qw/ policy maxEvents discardAmount / } )
@@ -94,7 +97,13 @@ sub createIO
    my ( $self, %args ) = @_;
    return new Tibco::Rv::IO( queue => $self, %args );
 }
-### sub createCmListener??
+
+
+sub createCmListener
+{
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::Cm::Listener( queue => $self, %args );
+}
 
 
 sub createDispatcher
@@ -121,8 +130,7 @@ sub poll
 sub timedDispatch
 {
    my ( $self, $timeout ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvQueue_TimedDispatch( $self->{id}, $timeout );
+   my ( $status ) = tibrvQueue_TimedDispatch( $self->{id}, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
    return new Tibco::Rv::Status( status => $status );
@@ -133,7 +141,7 @@ sub count
 {
    my ( $self ) = @_;
    my ( $count );
-   my ( $status ) = Tibco::Rv::Queue_GetCount( $self->{id}, $count );
+   my ( $status ) = Queue_GetCount( $self->{id}, $count );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $count;
 }
@@ -150,8 +158,8 @@ sub _setLimitPolicy
 {
    my ( $self, %policy );
    ( $self, @policy{ @limitProperties } ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvQueue_SetLimitPolicy( $self->{id},
-      @policy{ @limitProperties } );
+   my ( $status ) =
+      tibrvQueue_SetLimitPolicy( $self->{id}, @policy{ @limitProperties } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return @$self{ @limitProperties } = @policy{ @limitProperties };
 }
@@ -168,7 +176,7 @@ sub _setName
 {
    my ( $self, $name ) = @_;
    $name = '' unless ( defined $name );
-   my ( $status ) = Tibco::Rv::tibrvQueue_SetName( $self->{id}, $name );
+   my ( $status ) = tibrvQueue_SetName( $self->{id}, $name );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{name} = $name;
 }
@@ -184,7 +192,7 @@ sub priority
 sub _setPriority
 {
    my ( $self, $priority ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvQueue_SetPriority( $self->{id}, $priority );
+   my ( $status ) = tibrvQueue_SetPriority( $self->{id}, $priority );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{priority} = $priority;
 }
@@ -200,8 +208,10 @@ sub hook
 sub _setHook
 {
    my ( $self, $hook ) = @_;
+   die "hook not supported"; # see BUGS
    $self->{hook} = $hook;
-   my ( $status ) = Tibco::Rv::Queue_SetHook( $self->{id}, $self->{hook} );
+   my ( $status ) =
+      Tibco::Rv::Event::Queue_SetHook( $self->{id}, $self->{hook} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{hook};
 }
@@ -212,8 +222,11 @@ sub DESTROY
    my ( $self, $callback ) = @_;
    return unless ( exists $self->{id} );
 
-   my ( $status ) = Tibco::Rv::Queue_DestroyEx( $self->{id}, $callback );
+   my ( $id ) = $self->{id};
    delete @$self{ keys %$self };
+   return if ( $id == DEFAULT_QUEUE );
+
+   my ( $status ) = Tibco::Rv::Event::Queue_DestroyEx( $self->{id}, $callback );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -437,3 +450,30 @@ of 1.  Advisories pertaining to queue overflow are placed on this queue.
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+tibrv_status tibrvQueue_TimedDispatch( tibrvQueue queue, tibrv_f64 timeout );
+tibrv_status tibrvQueue_SetLimitPolicy( tibrvQueue queue,
+   tibrvQueueLimitPolicy policy, tibrv_u32 maxEvents, tibrv_u32 discardAmount );tibrv_status tibrvQueue_SetName( tibrvQueue queue, const char * name );
+   tibrv_status tibrvQueue_SetPriority( tibrvQueue queue, tibrv_u32 priority );
+
+
+tibrv_status Queue_Create( SV * sv_queue )
+{
+   tibrvQueue queue = (tibrvQueue)NULL;
+   tibrv_status status = tibrvQueue_Create( &queue );
+   sv_setiv( sv_queue, (IV)queue );
+   return status;
+}
+
+
+tibrv_status Queue_GetCount( tibrvQueue queue, SV * sv_count )
+{
+   tibrv_u32 count;
+   tibrv_status status = tibrvQueue_GetCount( queue, &count );
+   sv_setuv( sv_count, (UV)count );
+   return status;
+}

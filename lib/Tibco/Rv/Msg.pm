@@ -2,7 +2,12 @@ package Tibco::Rv::Msg;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.10';
+$VERSION = '1.11';
+
+
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 use constant FIELDNAME_MAX => 127;
@@ -68,7 +73,7 @@ sub new
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   my ( $status ) = Tibco::Rv::Msg_Create( $self->{id} );
+   my ( $status ) = Msg_Create( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    $self->sendSubject( $params{sendSubject} )
       if ( defined $params{sendSubject} );
@@ -107,7 +112,7 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::Msg_GetValues( @$self{ qw/ id sendSubject replySubject / } );
+   Msg_GetValues( @$self{ qw/ id sendSubject replySubject / } );
 }
 
 
@@ -119,7 +124,7 @@ sub copy
 {
    my ( $self ) = @_;
    my ( $copy );
-   my ( $status ) = Tibco::Rv::Msg_CreateCopy( $self->{id}, $copy );
+   my ( $status ) = Msg_CreateCopy( $self->{id}, $copy );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return Tibco::Rv::Msg->_adopt( $copy );
 }
@@ -132,7 +137,7 @@ sub createFromBytes
    my ( $self ) = bless { id => undef,
       sendSubject => undef, replySubject => undef }, $class;
 
-   my ( $status ) = Tibco::Rv::Msg_CreateFromBytes( $self->{id}, $bytes );
+   my ( $status ) = Msg_CreateFromBytes( $self->{id}, $bytes );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    return $self;
@@ -143,7 +148,7 @@ sub bytes
 {
    my ( $self ) = @_;
    my ( $bytes );
-   my ( $status ) = Tibco::Rv::Msg_GetAsBytes( $self->{id}, $bytes );
+   my ( $status ) = Msg_GetAsBytes( $self->{id}, $bytes );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $bytes;
 }
@@ -153,7 +158,7 @@ sub bytesCopy
 {
    my ( $self ) = @_;
    my ( $bytes );
-   my ( $status ) = Tibco::Rv::Msg_GetAsBytesCopy( $self->{id}, $bytes );
+   my ( $status ) = Msg_GetAsBytesCopy( $self->{id}, $bytes );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $bytes;
 }
@@ -162,8 +167,7 @@ sub bytesCopy
 sub expand
 {
    my ( $self, $additionalStorage ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvMsg_Expand( $self->{id}, $additionalStorage );
+   my ( $status ) = tibrvMsg_Expand( $self->{id}, $additionalStorage );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -171,7 +175,7 @@ sub expand
 sub reset
 {
    my ( $self ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvMsg_Reset( $self->{id} );
+   my ( $status ) = tibrvMsg_Reset( $self->{id} );
    @$self{ qw/ sendSubject replySubject / } = ( undef, undef );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -181,7 +185,7 @@ sub numFields
 {
    my ( $self ) = @_;
    my ( $num );
-   my ( $status ) = Tibco::Rv::Msg_GetNumFields( $self->{id}, $num );
+   my ( $status ) = Msg_GetNumFields( $self->{id}, $num );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $num;
 }
@@ -191,7 +195,7 @@ sub byteSize
 {
    my ( $self ) = @_;
    my ( $size );
-   my ( $status ) = Tibco::Rv::Msg_GetByteSize( $self->{id}, $size );
+   my ( $status ) = Msg_GetByteSize( $self->{id}, $size );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $size;
 }
@@ -201,7 +205,7 @@ sub toString
 {
    my ( $self ) = @_;
    my ( $str );
-   my ( $status ) = Tibco::Rv::Msg_ConvertToString( $self->{id}, $str );
+   my ( $status ) = Msg_ConvertToString( $self->{id}, $str );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $str;
 }
@@ -217,7 +221,7 @@ sub sendSubject
 sub _setSendSubject
 {
    my ( $self, $subject ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvMsg_SetSendSubject( $self->{id}, $subject );
+   my ( $status ) = tibrvMsg_SetSendSubject( $self->{id}, $subject );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{sendSubject} = $subject;
 }
@@ -233,8 +237,7 @@ sub replySubject
 sub _setReplySubject
 {
    my ( $self, $subject ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvMsg_SetReplySubject( $self->{id}, $subject );
+   my ( $status ) = tibrvMsg_SetReplySubject( $self->{id}, $subject );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{replySubject} = $subject;
 }
@@ -243,27 +246,26 @@ sub _setReplySubject
 sub addField
 {
    my ( $self, $field ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvMsg_AddField( $self->{id}, $field->{ptr} );
+   my ( $status ) = tibrvMsg_AddField( $self->{id}, $field->{ptr} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
 
-sub addBool { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddBoolEx', @_ ) }
-sub addF32 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddF32Ex', @_ ) }
-sub addF64 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddF64Ex', @_ ) }
-sub addI8 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddI8Ex', @_ ) }
-sub addI16 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddI16Ex', @_ ) }
-sub addI32 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddI32Ex', @_ ) }
-sub addI64 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddI64Ex', @_ ) }
-sub addU8 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU8Ex', @_ ) }
-sub addU16 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU16Ex', @_ ) }
-sub addU32 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU32Ex', @_ ) }
-sub addU64 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU64Ex', @_ ) }
-sub addIPPort16 { shift->_addScalar( 'Tibco::Rv::Msg_AddIPPort16', @_ ) }
-sub addString { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddStringEx', @_ ) }
-sub addOpaque { shift->_addScalar( 'Tibco::Rv::Msg_AddOpaque', @_ ) }
-sub addXml { shift->_addScalar( 'Tibco::Rv::Msg_AddXml', @_ ) }
+sub addBool { shift->_addScalar( 'tibrvMsg_AddBoolEx', @_ ) }
+sub addF32 { shift->_addScalar( 'tibrvMsg_AddF32Ex', @_ ) }
+sub addF64 { shift->_addScalar( 'tibrvMsg_AddF64Ex', @_ ) }
+sub addI8 { shift->_addScalar( 'tibrvMsg_AddI8Ex', @_ ) }
+sub addI16 { shift->_addScalar( 'tibrvMsg_AddI16Ex', @_ ) }
+sub addI32 { shift->_addScalar( 'tibrvMsg_AddI32Ex', @_ ) }
+sub addI64 { shift->_addScalar( 'tibrvMsg_AddI64Ex', @_ ) }
+sub addU8 { shift->_addScalar( 'tibrvMsg_AddU8Ex', @_ ) }
+sub addU16 { shift->_addScalar( 'tibrvMsg_AddU16Ex', @_ ) }
+sub addU32 { shift->_addScalar( 'tibrvMsg_AddU32Ex', @_ ) }
+sub addU64 { shift->_addScalar( 'tibrvMsg_AddU64Ex', @_ ) }
+sub addIPPort16 { shift->_addScalar( 'Msg_AddIPPort16', @_ ) }
+sub addString { shift->_addScalar( 'tibrvMsg_AddStringEx', @_ ) }
+sub addOpaque { shift->_addScalar( 'Msg_AddOpaque', @_ ) }
+sub addXml { shift->_addScalar( 'Msg_AddXml', @_ ) }
 
 
 sub addIPAddr32
@@ -271,23 +273,21 @@ sub addIPAddr32
    my ( $self, $fieldName, $ipaddr32, $fieldId ) = @_;
    my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
    $ipaddr32 = ( $a << 24 ) + ( $b << 16 ) + ( $c << 8 ) + $d;
-   $self->_addScalar( 'Tibco::Rv::Msg_AddIPAddr32',
-      $fieldName, $ipaddr32, $fieldId );
+   $self->_addScalar( 'Msg_AddIPAddr32', $fieldName, $ipaddr32, $fieldId );
 }
 
 
 sub addMsg
 {
    my ( $self, $fieldName, $msg, $fieldId ) = @_;
-   $self->_addScalar( 'Tibco::Rv::tibrvMsg_AddMsgEx',
-      $fieldName, $msg->{id}, $fieldId );
+   $self->_addScalar( 'tibrvMsg_AddMsgEx', $fieldName, $msg->{id}, $fieldId );
 }
 
 
 sub addDateTime
 {
    my ( $self, $fieldName, $date, $fieldId ) = @_;
-   $self->_addScalar( 'Tibco::Rv::tibrvMsg_AddDateTimeEx',
+   $self->_addScalar( 'tibrvMsg_AddDateTimeEx',
       $fieldName, $date->{ptr}, $fieldId );
 }
 
@@ -308,8 +308,7 @@ sub getField
 {
    my ( $self, $fieldName, $fieldId ) = @_;
    my ( $field );
-   my ( $status ) =
-      Tibco::Rv::Msg_GetField( $self->{id}, $fieldName, $field, $fieldId );
+   my ( $status ) = Msg_GetField( $self->{id}, $fieldName, $field, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
    return ( $status == Tibco::Rv::OK )
@@ -353,7 +352,7 @@ sub getMsg
    my ( $self, $fieldName, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
    my ( $msg );
-   my ( $status ) = Tibco::Rv::Msg_GetScalar( $self->{id},
+   my ( $status ) = Msg_GetScalar( $self->{id},
       Tibco::Rv::Msg::MSG, $fieldName, $msg, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
@@ -366,7 +365,7 @@ sub getDateTime
    my ( $self, $fieldName, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
    my ( $date );
-   my ( $status ) = Tibco::Rv::Msg_GetScalar( $self->{id},
+   my ( $status ) = Msg_GetScalar( $self->{id},
       Tibco::Rv::Msg::DATETIME, $fieldName, $date, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
@@ -391,8 +390,7 @@ sub getFieldByIndex
 {
    my ( $self, $fieldIndex ) = @_;
    my ( $field );
-   my ( $status ) =
-      Tibco::Rv::Msg_GetFieldByIndex( $self->{id}, $field, $fieldIndex );
+   my ( $status ) = Msg_GetFieldByIndex( $self->{id}, $field, $fieldIndex );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return Tibco::Rv::Msg::Field->_adopt( $field );
 }
@@ -402,8 +400,8 @@ sub getFieldInstance
 {
    my ( $self, $fieldName, $instance ) = @_;
    my ( $field );
-   my ( $status ) = Tibco::Rv::Msg_GetFieldInstance( $self->{id}, $fieldName,
-      $field, $instance );
+   my ( $status ) = Msg_GetFieldInstance( $self->{id},
+      $fieldName, $field, $instance );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
    return ( $status == Tibco::Rv::OK )
@@ -415,8 +413,7 @@ sub removeField
 {
    my ( $self, $fieldName, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
-   my ( $status ) =
-      Tibco::Rv::tibrvMsg_RemoveFieldEx( $self->{id}, $fieldName, $fieldId );
+   my ( $status ) = tibrvMsg_RemoveFieldEx( $self->{id}, $fieldName, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
    return new Tibco::Rv::Status( status => $status );
@@ -426,7 +423,7 @@ sub removeField
 sub removeFieldInstance
 {
    my ( $self, $fieldName, $instance ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvMsg_RemoveFieldInstance( $self->{id},
+   my ( $status ) = tibrvMsg_RemoveFieldInstance( $self->{id},
       $fieldName, $instance );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
@@ -437,28 +434,26 @@ sub removeFieldInstance
 sub updateField
 {
    my ( $self, $field ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvMsg_UpdateField( $self->{id}, $field->{ptr} );
+   my ( $status ) = tibrvMsg_UpdateField( $self->{id}, $field->{ptr} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
 
-sub updateBool { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateBoolEx', @_ ) }
-sub updateF32 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateF32Ex', @_ ) }
-sub updateF64 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateF64Ex', @_ ) }
-sub updateI8 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateI8Ex', @_ ) }
-sub updateI16 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateI16Ex', @_ ) }
-sub updateI32 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateI32Ex', @_ ) }
-sub updateI64 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateI64Ex', @_ ) }
-sub updateU8 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU8Ex', @_ ) }
-sub updateU16 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU16Ex', @_ ) }
-sub updateU32 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU32Ex', @_ ) }
-sub updateU64 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU64Ex', @_ ) }
-sub updateIPPort16 { shift->_updScalar( 'Tibco::Rv::Msg_UpdateIPPort16', @_ ) }
-sub updateString
-   { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateStringEx', @_ ) }
-sub updateOpaque { shift->_updScalar( 'Tibco::Rv::Msg_UpdateOpaque', @_ ) }
-sub updateXml { shift->_updScalar( 'Tibco::Rv::Msg_UpdateXml', @_ ) }
+sub updateBool { shift->_updScalar( 'tibrvMsg_UpdateBoolEx', @_ ) }
+sub updateF32 { shift->_updScalar( 'tibrvMsg_UpdateF32Ex', @_ ) }
+sub updateF64 { shift->_updScalar( 'tibrvMsg_UpdateF64Ex', @_ ) }
+sub updateI8 { shift->_updScalar( 'tibrvMsg_UpdateI8Ex', @_ ) }
+sub updateI16 { shift->_updScalar( 'tibrvMsg_UpdateI16Ex', @_ ) }
+sub updateI32 { shift->_updScalar( 'tibrvMsg_UpdateI32Ex', @_ ) }
+sub updateI64 { shift->_updScalar( 'tibrvMsg_UpdateI64Ex', @_ ) }
+sub updateU8 { shift->_updScalar( 'tibrvMsg_UpdateU8Ex', @_ ) }
+sub updateU16 { shift->_updScalar( 'tibrvMsg_UpdateU16Ex', @_ ) }
+sub updateU32 { shift->_updScalar( 'tibrvMsg_UpdateU32Ex', @_ ) }
+sub updateU64 { shift->_updScalar( 'tibrvMsg_UpdateU64Ex', @_ ) }
+sub updateIPPort16 { shift->_updScalar( 'Msg_UpdateIPPort16', @_ ) }
+sub updateString { shift->_updScalar( 'tibrvMsg_UpdateStringEx', @_ ) }
+sub updateOpaque { shift->_updScalar( 'Msg_UpdateOpaque', @_ ) }
+sub updateXml { shift->_updScalar( 'Msg_UpdateXml', @_ ) }
 
 
 sub updateIPAddr32
@@ -466,15 +461,14 @@ sub updateIPAddr32
    my ( $self, $fieldName, $ipaddr32, $fieldId ) = @_;
    my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
    $ipaddr32 = ( $a << 24 ) + ( $b << 16 ) + ( $c << 8 ) + $d;
-   $self->_updScalar( 'Tibco::Rv::Msg_UpdateIPAddr32',
-      $fieldName, $ipaddr32, $fieldId );
+   $self->_updScalar( 'Msg_UpdateIPAddr32', $fieldName, $ipaddr32, $fieldId );
 }
 
 
 sub updateMsg
 {
    my ( $self, $fieldName, $msg, $fieldId ) = @_;
-   $self->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateMsgEx',
+   $self->_updScalar( 'tibrvMsg_UpdateMsgEx',
       $fieldName, $msg->{id}, $fieldId );
 }
 
@@ -482,7 +476,7 @@ sub updateMsg
 sub updateDateTime
 {
    my ( $self, $fieldName, $date, $fieldId ) = @_;
-   $self->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateDateTimeEx',
+   $self->_updScalar( 'tibrvMsg_UpdateDateTimeEx',
       $fieldName, $date->{ptr}, $fieldId );
 }
 
@@ -502,7 +496,7 @@ sub updateU64Array { shift->_updArray( Tibco::Rv::Msg::U64ARRAY, @_ ) }
 sub clearReferences
 {
    my ( $self ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvMsg_ClearReferences( $self->{id} );
+   my ( $status ) = tibrvMsg_ClearReferences( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -510,7 +504,7 @@ sub clearReferences
 sub markReferences
 {
    my ( $self ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvMsg_MarkReferences( $self->{id} );
+   my ( $status ) = tibrvMsg_MarkReferences( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -529,8 +523,8 @@ sub _getScalar
    my ( $self, $type, $fieldName, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
    my ( $value );
-   my ( $status ) = Tibco::Rv::Msg_GetScalar( $self->{id}, $type, $fieldName,
-      $value, $fieldId );
+   my ( $status ) = Msg_GetScalar( $self->{id},
+      $type, $fieldName, $value, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
    return ( $status == Tibco::Rv::OK ) ? $value : undef;
@@ -551,8 +545,8 @@ sub _getArray
    my ( $self, $type, $fieldName, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
    my ( $elts ) = [ ];
-   my ( $status ) = Tibco::Rv::Msg_GetArray( $self->{id}, $type, $fieldName,
-      $elts, $fieldId );
+   my ( $status ) =
+      Msg_GetArray( $self->{id}, $type, $fieldName, $elts, $fieldId );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
    return ( $status == Tibco::Rv::OK ) ? $elts : undef;
@@ -567,8 +561,8 @@ sub _addOrUpdArray
 {
    my ( $self, $isAdd, $type, $fieldName, $elts, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
-   my ( $status ) = Tibco::Rv::Msg_AddOrUpdateArray( $self->{id}, $isAdd,
-      $type, $fieldName, $elts, $fieldId );
+   my ( $status ) = Msg_AddOrUpdateArray( $self->{id},
+      $isAdd, $type, $fieldName, $elts, $fieldId );
    die Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -578,7 +572,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{id} );
 
-   my ( $status ) = Tibco::Rv::tibrvMsg_Destroy( $self->{id} );
+   my ( $status ) = tibrvMsg_Destroy( $self->{id} );
    delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -924,3 +918,1022 @@ Maximum length of a field name
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+
+tibrv_status tibrvMsg_SetSendSubject( tibrvMsg message, const char * subject );
+tibrv_status tibrvMsg_SetReplySubject( tibrvMsg message, const char * subject );
+tibrv_status tibrvMsg_Expand( tibrvMsg message, tibrv_i32 additionalStorage );
+tibrv_status tibrvMsg_Reset( tibrvMsg message );
+tibrv_status tibrvMsg_AddField( tibrvMsg message, tibrvMsgField * field );
+tibrv_status tibrvMsg_ClearReferences( tibrvMsg message );
+tibrv_status tibrvMsg_MarkReferences( tibrvMsg message );
+tibrv_status tibrvMsg_RemoveFieldEx( tibrvMsg message, const char * fieldName,
+   tibrv_u16 fieldId );
+tibrv_status tibrvMsg_RemoveFieldInstance( tibrvMsg message,
+   const char * fieldName, tibrv_u32 instance );
+tibrv_status tibrvMsg_UpdateField( tibrvMsg message, tibrvMsgField * field );
+tibrv_status tibrvMsg_Destroy( tibrvMsg message );
+tibrv_status tibrvMsg_AddBoolEx( tibrvMsg message, const char * fieldName,
+   tibrv_bool value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddF32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_f32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddF64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_f64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddI8Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i8 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddI16Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i16 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddI32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddI64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddU8Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u8 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddU16Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u16 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddU32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddU64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddStringEx( tibrvMsg message, const char * fieldName,
+   const char * value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddMsgEx( tibrvMsg message, const char * fieldName,
+   tibrvMsg value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_AddDateTimeEx( tibrvMsg message, const char * fieldName,
+   const tibrvMsgDateTime * value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateBoolEx( tibrvMsg message, const char * fieldName,
+   tibrv_bool value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateF32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_f32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateF64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_f64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateI8Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i8 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateI16Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i16 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateI32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateI64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_i64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateU8Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u8 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateU16Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u16 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateU32Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u32 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateU64Ex( tibrvMsg message, const char * fieldName,
+   tibrv_u64 value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateStringEx( tibrvMsg message, const char * fieldName,
+   const char * value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateMsgEx( tibrvMsg message, const char * fieldName,
+   tibrvMsg value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_UpdateDateTimeEx( tibrvMsg message,
+   const char * fieldName, const tibrvMsgDateTime * value, tibrv_u16 fieldId );
+tibrv_status tibrvMsg_SetCMTimeLimit( tibrvMsg message, tibrv_f64 timeLimit );
+
+
+tibrv_status Msg_Create( SV * sv_message )
+{
+   tibrvMsg message = (tibrvMsg)NULL;
+   tibrv_status status = tibrvMsg_Create( &message );
+   sv_setiv( sv_message, (IV)message );
+   return status;
+}
+
+
+void Msg_GetValues( tibrvMsg message, SV * sv_sendSubject,
+   SV * sv_replySubject )
+{
+   const char * sendSubject = NULL;
+   const char * replySubject = NULL;
+   tibrvMsg_GetSendSubject( message, &sendSubject );
+   tibrvMsg_GetReplySubject( message, &replySubject );
+   sv_setpv( sv_sendSubject, sendSubject );
+   sv_setpv( sv_replySubject, replySubject );
+}
+
+
+tibrv_status Msg_CreateCopy( tibrvMsg message, SV * sv_copy )
+{
+   tibrvMsg copy;
+   tibrv_status status = tibrvMsg_CreateCopy( message, &copy );
+   sv_setiv( sv_copy, (IV)copy );
+   return status;
+}
+
+
+tibrv_status Msg_GetField( tibrvMsg message, const char * fieldName,
+   SV * sv_field, tibrv_u16 fieldId )
+{
+   tibrv_status status;
+   tibrvMsgField * field = (tibrvMsgField *)malloc( sizeof( tibrvMsgField ) );
+   if ( field == NULL ) return TIBRV_NO_MEMORY;
+   status = tibrvMsg_GetFieldEx( message, fieldName, field, fieldId );
+   sv_setiv( sv_field, (IV)field );
+   return status;
+}
+
+
+tibrv_status Msg_GetScalar( tibrvMsg message, tibrv_u8 type,
+   const char * fieldName, SV * sv_value, tibrv_u16 fieldId )
+{
+   tibrv_status status;
+
+   switch ( type )
+   {
+      case TIBRVMSG_BOOL: {
+         tibrv_bool boolean;
+         status = tibrvMsg_GetBoolEx( message, fieldName, &boolean, fieldId );
+         sv_setiv( sv_value, (IV)boolean );
+      } break;
+      case TIBRVMSG_F32: {
+         tibrv_f32 f32;
+         status = tibrvMsg_GetF32Ex( message, fieldName, &f32, fieldId );
+         sv_setnv( sv_value, f32 );
+      } break;
+      case TIBRVMSG_F64: {
+         tibrv_f64 f64;
+         status = tibrvMsg_GetF64Ex( message, fieldName, &f64, fieldId );
+         sv_setnv( sv_value, f64 );
+      } break;
+      case TIBRVMSG_I8: {
+         tibrv_i8 i8;
+         status = tibrvMsg_GetI8Ex( message, fieldName, &i8, fieldId );
+         sv_setiv( sv_value, (IV)i8 );
+      } break;
+      case TIBRVMSG_I16: {
+         tibrv_i16 i16;
+         status = tibrvMsg_GetI16Ex( message, fieldName, &i16, fieldId );
+         sv_setiv( sv_value, (IV)i16 );
+      } break;
+      case TIBRVMSG_I32: {
+         tibrv_i32 i32;
+         status = tibrvMsg_GetI32Ex( message, fieldName, &i32, fieldId );
+         sv_setiv( sv_value, (IV)i32 );
+      } break;
+      case TIBRVMSG_I64: {
+         tibrv_i64 i64;
+         status = tibrvMsg_GetI64Ex( message, fieldName, &i64, fieldId );
+         sv_setiv( sv_value, (IV)i64 );
+      } break;
+      case TIBRVMSG_U8: {
+         tibrv_u8 u8;
+         status = tibrvMsg_GetU8Ex( message, fieldName, &u8, fieldId );
+         sv_setuv( sv_value, (UV)u8 );
+      } break;
+      case TIBRVMSG_U16: {
+         tibrv_u16 u16;
+         status = tibrvMsg_GetU16Ex( message, fieldName, &u16, fieldId );
+         sv_setuv( sv_value, (UV)u16 );
+      } break;
+      case TIBRVMSG_U32: {
+         tibrv_u32 u32;
+         status = tibrvMsg_GetU32Ex( message, fieldName, &u32, fieldId );
+         sv_setuv( sv_value, (UV)u32 );
+      } break;
+      case TIBRVMSG_U64: {
+         tibrv_u64 u64;
+         status = tibrvMsg_GetU64Ex( message, fieldName, &u64, fieldId );
+         sv_setuv( sv_value, (UV)u64 );
+      } break;
+      case TIBRVMSG_IPADDR32: {
+         tibrv_ipaddr32 ipaddr32;
+         status =
+            tibrvMsg_GetIPAddr32Ex( message, fieldName, &ipaddr32, fieldId );
+         sv_setuv( sv_value, (UV)ntohl( ipaddr32 ) );
+      } break;
+      case TIBRVMSG_IPPORT16: {
+         tibrv_ipport16 ipport16;
+         status =
+            tibrvMsg_GetIPPort16Ex( message, fieldName, &ipport16, fieldId );
+         sv_setuv( sv_value, (UV)ntohs( ipport16 ) );
+      } break;
+      case TIBRVMSG_STRING: {
+         const char * str;
+         status = tibrvMsg_GetStringEx( message, fieldName, &str, fieldId );
+         sv_setpv( sv_value, str );
+      } break;
+      case TIBRVMSG_OPAQUE: {
+         const void * opaque;
+         tibrv_u32 len;
+         status =
+            tibrvMsg_GetOpaqueEx( message, fieldName, &opaque, &len, fieldId );
+         sv_setpvn( sv_value, (char *)opaque, len );
+      } break;
+      case TIBRVMSG_XML: {
+         const void * xml;
+         tibrv_u32 len;
+         status = tibrvMsg_GetXmlEx( message, fieldName, &xml, &len, fieldId );
+         sv_setpvn( sv_value, (char *)xml, len );
+      } break;
+      case TIBRVMSG_MSG: {
+         tibrvMsg msg = (tibrvMsg)NULL;
+         status = tibrvMsg_GetMsgEx( message, fieldName, &msg, fieldId );
+         sv_setiv( sv_value, (IV)msg );
+      } break;
+      case TIBRVMSG_DATETIME: {
+         tibrvMsgDateTime * date =
+            (tibrvMsgDateTime *)malloc( sizeof( tibrvMsgDateTime ) );
+         if ( date == NULL ) return TIBRV_NO_MEMORY;
+         status = tibrvMsg_GetDateTimeEx( message, fieldName, date, fieldId );
+         sv_setiv( sv_value, (IV)date );
+      } break;
+   }
+
+   return status;
+}
+
+
+tibrv_status Msg_GetArray( tibrvMsg message, tibrv_u8 type, const char * name,
+   SV * elts, tibrv_u16 id )
+{
+   int i = 0;
+   tibrv_status status = TIBRV_OK;
+   tibrv_u32 n = 0;
+   AV * e = (AV *)SvRV( elts );
+
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         const tibrv_f32 * f32s;
+         status = tibrvMsg_GetF32ArrayEx( message, name, &f32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSVnv( f32s[ i ] ) );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         const tibrv_f64 * f64s;
+         status = tibrvMsg_GetF64ArrayEx( message, name, &f64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSVnv( f64s[ i ] ) );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         const tibrv_i8 * i8s;
+         status = tibrvMsg_GetI8ArrayEx( message, name, &i8s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i8s[ i ] ) );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         const tibrv_i16 * i16s;
+         status = tibrvMsg_GetI16ArrayEx( message, name, &i16s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i16s[ i ] ) );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         const tibrv_i32 * i32s;
+         status = tibrvMsg_GetI32ArrayEx( message, name, &i32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i32s[ i ] ) );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         const tibrv_i64 * i64s;
+         status = tibrvMsg_GetI64ArrayEx( message, name, &i64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i64s[ i ] ) );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         const tibrv_u8 * u8s;
+         status = tibrvMsg_GetU8ArrayEx( message, name, &u8s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u8s[ i ] ) );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         const tibrv_u16 * u16s;
+         status = tibrvMsg_GetU16ArrayEx( message, name, &u16s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u16s[ i ] ) );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         const tibrv_u32 * u32s;
+         status = tibrvMsg_GetU32ArrayEx( message, name, &u32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u32s[ i ] ) );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         const tibrv_u64 * u64s;
+         status = tibrvMsg_GetU64ArrayEx( message, name, &u64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u64s[ i ] ) );
+      } break;
+   }
+
+   return status;
+}
+
+
+
+tibrv_status Msg_GetFieldByIndex( tibrvMsg message, SV * sv_field,
+   tibrv_u32 fieldIndex )
+{
+   tibrv_status status;
+   tibrvMsgField * field = (tibrvMsgField *)malloc( sizeof( tibrvMsgField ) );
+   if ( field == NULL ) return TIBRV_NO_MEMORY;
+   status = tibrvMsg_GetFieldByIndex( message, field, fieldIndex );
+   sv_setiv( sv_field, (IV)field );
+   return status;
+}
+
+
+tibrv_status Msg_GetFieldInstance( tibrvMsg message, const char * fieldName,
+   SV * sv_field, tibrv_u32 instance )
+{
+   tibrv_status status;
+   tibrvMsgField * field = (tibrvMsgField *)malloc( sizeof( tibrvMsgField ) );
+   if ( field == NULL ) return TIBRV_NO_MEMORY;
+   status = tibrvMsg_GetFieldInstance( message, fieldName, field, instance );
+   sv_setiv( sv_field, (IV)field );
+   return status;
+}
+
+
+tibrv_status Msg_CreateFromBytes( SV * sv_message, SV * sv_bytes )
+{
+   tibrvMsg message = (tibrvMsg)NULL;
+   const void * bytes = SvPV( sv_bytes, PL_na );
+   tibrv_status status = tibrvMsg_CreateFromBytes( &message, bytes );
+   sv_setiv( sv_message, (IV)message );
+   return status;
+}
+
+
+tibrv_status Msg_GetAsBytes( tibrvMsg message, SV * sv_bytes )
+{
+   tibrv_u32 byteSize;
+   const void * bytes;
+   tibrv_status status = tibrvMsg_GetByteSize( message, &byteSize );
+   if ( status != TIBRV_OK ) return status;
+   status = tibrvMsg_GetAsBytes( message, &bytes );
+   if ( status != TIBRV_OK ) return status;
+   sv_setpvn( sv_bytes, (char *)bytes, byteSize );
+   return status;
+}
+
+
+tibrv_status Msg_GetAsBytesCopy( tibrvMsg message, SV * sv_bytes )
+{
+   void * bytes;
+   tibrv_u32 byteSize;
+   tibrv_status status = tibrvMsg_GetByteSize( message, &byteSize );
+   bytes = malloc( byteSize );
+   if ( bytes == NULL ) return TIBRV_NO_MEMORY;
+   if ( status != TIBRV_OK ) return status;
+   status = tibrvMsg_GetAsBytesCopy( message, bytes, byteSize );
+   if ( status != TIBRV_OK ) return status;
+   sv_setpvn( sv_bytes, (char *)bytes, byteSize );
+   free( bytes );
+   return status;
+}
+
+
+tibrv_status Msg_GetNumFields( tibrvMsg message, SV * sv_numFields )
+{
+   tibrv_u32 numFields;
+   tibrv_status status = tibrvMsg_GetNumFields( message, &numFields );
+   sv_setuv( sv_numFields, (UV)numFields );
+   return status;
+}
+
+
+tibrv_status Msg_GetByteSize( tibrvMsg message, SV * sv_byteSize )
+{
+   tibrv_u32 byteSize;
+   tibrv_status status = tibrvMsg_GetByteSize( message, &byteSize );
+   sv_setuv( sv_byteSize, (UV)byteSize );
+   return status;
+}
+
+
+tibrv_status Msg_ConvertToString( tibrvMsg message, SV * sv_str )
+{
+   const char * str;
+   tibrv_status status = tibrvMsg_ConvertToString( message, &str );
+   sv_setpv( sv_str, str );
+   return status;
+}
+
+
+tibrv_status Msg_AddIPAddr32( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return tibrvMsg_AddIPAddr32Ex( message, fieldName, htonl( value ), fieldId );
+}
+
+
+tibrv_status Msg_AddIPPort16( tibrvMsg message, const char * fieldName,
+   tibrv_ipport16 value, tibrv_u16 fieldId )
+{
+   return tibrvMsg_AddIPPort16Ex( message, fieldName, htons( value ), fieldId );
+}
+
+
+tibrv_status Msg_AddOpaque( tibrvMsg message, const char * fieldName,
+   SV * sv_value, tibrv_u16 fieldId )
+{
+   STRLEN len;
+   void * buf = SvPV( sv_value, len );
+   return tibrvMsg_AddOpaqueEx( message, fieldName, buf, len, fieldId );
+}
+
+
+tibrv_status Msg_AddXml( tibrvMsg message, const char * fieldName,
+   SV * sv_value, tibrv_u16 fieldId )
+{
+   STRLEN len;
+   void * buf = SvPV( sv_value, len );
+   return tibrvMsg_AddXmlEx( message, fieldName, buf, len, fieldId );
+}
+
+
+tibrv_status Msg_AddOrUpdateArray( tibrvMsg message, tibrv_bool isAdd,
+   tibrv_u8 type, const char * fieldName, SV * elts, tibrv_u16 fieldId )
+{
+   tibrv_status status = TIBRV_OK;
+   I32 len;
+   AV * e;
+   int i;
+   if ( SvTYPE( SvRV( elts ) ) != SVt_PVAV ) return TIBRV_INVALID_ARG;
+   e = (AV *)SvRV( elts );
+
+   len = av_len( e ) + 1;
+   if ( len == 0 ) return TIBRV_OK;
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 f32s[ len ];
+         for ( i = 0; i < len; i ++ ) f32s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddF32ArrayEx( message, fieldName, f32s, len, fieldId ) :
+            tibrvMsg_UpdateF32ArrayEx( message, fieldName, f32s, len, fieldId );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 f64s[ len ];
+         for ( i = 0; i < len; i ++ ) f64s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddF64ArrayEx( message, fieldName, f64s, len, fieldId ) :
+            tibrvMsg_UpdateF64ArrayEx( message, fieldName, f64s, len, fieldId );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 i8s[ len ];
+         for ( i = 0; i < len; i ++ ) i8s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI8ArrayEx( message, fieldName, i8s, len, fieldId ) :
+            tibrvMsg_UpdateI8ArrayEx( message, fieldName, i8s, len, fieldId );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 i16s[ len ];
+         for ( i = 0; i < len; i ++ ) i16s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI16ArrayEx( message, fieldName, i16s, len, fieldId ) :
+            tibrvMsg_UpdateI16ArrayEx( message, fieldName, i16s, len, fieldId );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 i32s[ len ];
+         for ( i = 0; i < len; i ++ ) i32s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI32ArrayEx( message, fieldName, i32s, len, fieldId ) :
+            tibrvMsg_UpdateI32ArrayEx( message, fieldName, i32s, len, fieldId );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 i64s[ len ];
+         for ( i = 0; i < len; i ++ ) i64s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI64ArrayEx( message, fieldName, i64s, len, fieldId ) :
+            tibrvMsg_UpdateI64ArrayEx( message, fieldName, i64s, len, fieldId );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 u8s[ len ];
+         for ( i = 0; i < len; i ++ ) u8s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU8ArrayEx( message, fieldName, u8s, len, fieldId ) :
+            tibrvMsg_UpdateU8ArrayEx( message, fieldName, u8s, len, fieldId );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 u16s[ len ];
+         for ( i = 0; i < len; i ++ ) u16s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU16ArrayEx( message, fieldName, u16s, len, fieldId ) :
+            tibrvMsg_UpdateU16ArrayEx( message, fieldName, u16s, len, fieldId );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 u32s[ len ];
+         for ( i = 0; i < len; i ++ ) u32s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU32ArrayEx( message, fieldName, u32s, len, fieldId ) :
+            tibrvMsg_UpdateU32ArrayEx( message, fieldName, u32s, len, fieldId );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 u64s[ len ];
+         for ( i = 0; i < len; i ++ ) u64s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU64ArrayEx( message, fieldName, u64s, len, fieldId ) :
+            tibrvMsg_UpdateU64ArrayEx( message, fieldName, u64s, len, fieldId );
+      } break;
+   }
+
+   return status;
+}
+
+
+tibrv_status Msg_UpdateOpaque( tibrvMsg message, const char * fieldName,
+   SV * sv_value, tibrv_u16 fieldId )
+{
+   STRLEN len;
+   void * buf = SvPV( sv_value, len );
+   return tibrvMsg_UpdateOpaqueEx( message, fieldName, buf, len, fieldId );
+}
+
+
+tibrv_status Msg_UpdateXml( tibrvMsg message, const char * fieldName,
+   SV * sv_value, tibrv_u16 fieldId )
+{
+   STRLEN len;
+   void * buf = SvPV( sv_value, len );
+   return tibrvMsg_UpdateXmlEx( message, fieldName, buf, len, fieldId );
+}
+
+
+tibrv_status Msg_UpdateIPAddr32( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return
+      tibrvMsg_UpdateIPAddr32Ex( message, fieldName, htonl( value ), fieldId );
+}
+
+
+tibrv_status Msg_UpdateIPPort16( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return
+      tibrvMsg_UpdateIPPort16Ex( message, fieldName, htons( value ), fieldId );
+}
+
+
+tibrv_status MsgDateTime_Create( SV * sv_date, tibrv_i64 sec, tibrv_u32 nsec )
+{
+   tibrvMsgDateTime * date =
+      (tibrvMsgDateTime *)malloc( sizeof( tibrvMsgDateTime ) );
+   if ( date == NULL ) return TIBRV_NO_MEMORY;
+   date->sec = sec;
+   date->nsec = nsec;
+   sv_setiv( sv_date, (IV)date );
+   return TIBRV_OK;
+}
+
+
+
+
+tibrv_status MsgField_Create( SV * sv_field, const char * name, tibrv_u16 id )
+{
+   tibrvMsgField * field = (tibrvMsgField *)malloc( sizeof( tibrvMsgField ) );
+   if ( field == NULL ) return TIBRV_NO_MEMORY;
+
+   field->name = name;
+   field->id = id;
+
+   sv_setiv( sv_field, (IV)field );
+   return TIBRV_OK;
+}
+
+
+void MsgField_GetArrayValue( tibrvMsgField * field, SV * sv_data )
+{
+   int i;
+   AV * e = newAV( );
+   av_extend( e, field->count );
+
+   switch ( field->type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 * f32s = (tibrv_f32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSVnv( f32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 * f64s = (tibrv_f64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSVnv( f64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 * i8s = (tibrv_i8 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i8s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 * i16s = (tibrv_i16 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i16s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 * i32s = (tibrv_i32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 * i64s = (tibrv_i64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 * u8s = (tibrv_u8 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u8s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 * u16s = (tibrv_u16 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u16s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 * u32s = (tibrv_u32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 * u64s = (tibrv_u64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+   }
+   sv_setsv( sv_data, newRV( (SV *)e ) );
+}
+
+
+void MsgField_GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
+   SV * sv_size, SV * sv_count, SV * sv_type, SV * sv_data )
+{
+   switch ( field->type )
+   {
+      case TIBRVMSG_MSG: sv_setiv( sv_data, (IV)field->data.msg );
+      break;
+      case TIBRVMSG_STRING: sv_setpvn( sv_data, field->data.str, field->size );
+      break;
+      case TIBRVMSG_OPAQUE:
+      case TIBRVMSG_XML:
+         sv_setpvn( sv_data, field->data.buf, field->size );
+      break;
+      case TIBRVMSG_I8ARRAY:
+      case TIBRVMSG_U8ARRAY:
+      case TIBRVMSG_I16ARRAY:
+      case TIBRVMSG_U16ARRAY:
+      case TIBRVMSG_I32ARRAY:
+      case TIBRVMSG_U32ARRAY:
+      case TIBRVMSG_I64ARRAY:
+      case TIBRVMSG_U64ARRAY:
+      case TIBRVMSG_F32ARRAY:
+      case TIBRVMSG_F64ARRAY: {
+         size_t len = field->size * field->count;
+         void * array = malloc( len );
+         if ( array == NULL )
+         {
+            field->size = field->count = 0;
+            break;
+         }
+         field->data.array = memcpy( array, field->data.array, len );
+         MsgField_GetArrayValue( field, sv_data );
+      } break;
+      case TIBRVMSG_BOOL: sv_setiv( sv_data, (IV)field->data.boolean ); break;
+      case TIBRVMSG_I8: sv_setiv( sv_data, (IV)field->data.i8 ); break;
+      case TIBRVMSG_U8: sv_setuv( sv_data, (UV)field->data.u8 ); break;
+      case TIBRVMSG_I16: sv_setiv( sv_data, (IV)field->data.i16 ); break;
+      case TIBRVMSG_U16: sv_setuv( sv_data, (UV)field->data.u16 ); break;
+      case TIBRVMSG_I32: sv_setiv( sv_data, (IV)field->data.i32 ); break;
+      case TIBRVMSG_U32: sv_setuv( sv_data, (UV)field->data.u32 ); break;
+      case TIBRVMSG_I64: sv_setiv( sv_data, (IV)field->data.i64 ); break;
+      case TIBRVMSG_U64: sv_setuv( sv_data, (UV)field->data.u64 ); break;
+      case TIBRVMSG_F32: sv_setnv( sv_data, field->data.f32 ); break;
+      case TIBRVMSG_F64: sv_setnv( sv_data, field->data.f64 ); break;
+      case TIBRVMSG_IPPORT16:
+         sv_setuv( sv_data, (UV)ntohs( field->data.ipport16 ) );
+      break;
+      case TIBRVMSG_IPADDR32:
+         sv_setuv( sv_data, (UV)ntohl( field->data.ipaddr32 ) );
+      break;
+      case TIBRVMSG_DATETIME:
+         MsgDateTime_Create( sv_data, (IV)field->data.date.sec,
+            (UV)field->data.date.nsec );
+      break;
+   }
+   if ( ! field->name ) field->name = strdup( "" );
+   sv_setpv( sv_name, field->name );
+   sv_setuv( sv_id, (UV)field->id );
+   sv_setuv( sv_size, (UV)field->size );
+   sv_setuv( sv_count, (UV)field->count );
+   sv_setuv( sv_type, (UV)field->type );
+}
+
+
+void MsgField_SetName( tibrvMsgField * field, const char * name )
+{
+   field->name = name;
+}
+
+
+void MsgField_SetId( tibrvMsgField * field, tibrv_u16 id )
+{
+   field->id = id;
+}
+
+
+void MsgField_CheckDelOldArray( tibrvMsgField * field )
+{
+   switch ( field->type )
+   {
+      case TIBRVMSG_F32ARRAY:
+      case TIBRVMSG_F64ARRAY:
+      case TIBRVMSG_I8ARRAY:
+      case TIBRVMSG_I16ARRAY:
+      case TIBRVMSG_I32ARRAY:
+      case TIBRVMSG_I64ARRAY:
+      case TIBRVMSG_U8ARRAY:
+      case TIBRVMSG_U16ARRAY:
+      case TIBRVMSG_U32ARRAY:
+      case TIBRVMSG_U64ARRAY:
+         free( (void *)field->data.array );
+         field->data.array = NULL;
+   }
+}
+
+
+tibrv_u32 MsgField_SetMsg( tibrvMsgField * field, tibrvMsg message )
+{
+   MsgField_CheckDelOldArray( field );
+   field->data.msg = message;
+   field->size = 0;
+   tibrvMsg_GetByteSize( message, &field->size );
+   field->count = 1;
+   field->type = TIBRVMSG_MSG;
+
+   return field->size;
+}
+
+
+tibrv_u32 MsgField_SetBuf( tibrvMsgField * field, tibrv_u8 type, SV * sv_buf )
+{
+   STRLEN len;
+   char * buf = SvPV( sv_buf, len );
+   MsgField_CheckDelOldArray( field );
+   switch ( type )
+   {
+      case TIBRVMSG_STRING:
+         SvGROW( sv_buf, len + 1 );
+         buf[ len ] = '\0';
+         len = strlen( buf ) + 1;
+         field->data.str = buf;
+      break;
+      case TIBRVMSG_OPAQUE:
+      case TIBRVMSG_XML:
+         field->data.buf = buf;
+      break;
+   }
+   field->count = 1;
+   field->type = type;
+   return field->size = len;
+}
+
+
+tibrv_u32 MsgField_SetElt( tibrvMsgField * field, tibrv_u8 type, SV * sv_elt )
+{
+   MsgField_CheckDelOldArray( field );
+   field->count = 1;
+   field->type = type;
+   switch ( type )
+   {
+      case TIBRVMSG_BOOL: field->data.boolean = SvIV( sv_elt ); break;
+      case TIBRVMSG_I8: field->data.i8 = SvIV( sv_elt ); break;
+      case TIBRVMSG_U8: field->data.u8 = SvUV( sv_elt ); break;
+      case TIBRVMSG_I16: field->data.i16 = SvIV( sv_elt ); break;
+      case TIBRVMSG_U16: field->data.i16 = SvUV( sv_elt ); break;
+      case TIBRVMSG_I32: field->data.i32 = SvIV( sv_elt ); break;
+      case TIBRVMSG_U32: field->data.u32 = SvUV( sv_elt ); break;
+      case TIBRVMSG_I64: field->data.i64 = SvIV( sv_elt ); break;
+      case TIBRVMSG_U64: field->data.u64 = SvUV( sv_elt ); break;
+      case TIBRVMSG_F32: field->data.f32 = SvNV( sv_elt ); break;
+      case TIBRVMSG_F64: field->data.f64 = SvNV( sv_elt ); break;
+      case TIBRVMSG_IPPORT16:
+         field->data.ipport16 = htons( SvUV( sv_elt ) );
+      break;
+      case TIBRVMSG_IPADDR32:
+         field->data.ipaddr32 = htonl( SvUV( sv_elt ) );
+      break;
+   }
+   switch ( type )
+   {
+      case TIBRVMSG_BOOL:
+         return field->size = sizeof( tibrv_bool );
+      case TIBRVMSG_I8:
+      case TIBRVMSG_U8:
+         return field->size = 1;
+      case TIBRVMSG_I16:
+      case TIBRVMSG_U16:
+      case TIBRVMSG_IPPORT16:
+         return field->size = 2;
+      case TIBRVMSG_I32:
+      case TIBRVMSG_U32:
+      case TIBRVMSG_F32:
+      case TIBRVMSG_IPADDR32:
+         return field->size = 4;
+      case TIBRVMSG_I64:
+      case TIBRVMSG_U64:
+      case TIBRVMSG_F64:
+         return field->size = 8;
+   }
+   return 0;
+}
+
+
+tibrv_u32 MsgField_SetAry( tibrvMsgField * field, tibrv_u8 type, SV * sv_ary )
+{
+   AV * e;
+   I32 len = 0;
+   int i;
+   MsgField_CheckDelOldArray( field );
+
+   if ( SvTYPE( SvRV( sv_ary ) ) != SVt_PVAV ) return 0;
+
+   e = (AV *)SvRV( sv_ary );
+   field->count = len = av_len( e ) + 1;
+   field->type = type;
+   field->size = 0;
+
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 * f32s = (tibrv_f32 *)malloc( len * sizeof( tibrv_f32 ) );
+         if ( f32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) f32s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         field->data.array = f32s;
+         field->size = sizeof( tibrv_f32 );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 * f64s = (tibrv_f64 *)malloc( len * sizeof( tibrv_f64 ) );
+         if ( f64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) f64s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         field->data.array = f64s;
+         field->size = sizeof( tibrv_f64 );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 * i8s = (tibrv_i8 *)malloc( len * sizeof( tibrv_i8 ) );
+         if ( i8s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i8s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i8s;
+         field->size = sizeof( tibrv_i8 );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 * i16s = (tibrv_i16 *)malloc( len * sizeof( tibrv_i16 ) );
+         if ( i16s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i16s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i16s;
+         field->size = sizeof( tibrv_i16 );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 * i32s = (tibrv_i32 *)malloc( len * sizeof( tibrv_i32 ) );
+         if ( i32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i32s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i32s;
+         field->size = sizeof( tibrv_i32 );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 * i64s = (tibrv_i64 *)malloc( len * sizeof( tibrv_i64 ) );
+         if ( i64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i64s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i64s;
+         field->size = sizeof( tibrv_i64 );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 * u8s = (tibrv_u8 *)malloc( len * sizeof( tibrv_u8 ) );
+         if ( u8s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u8s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u8s;
+         field->size = sizeof( tibrv_u8 );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 * u16s = (tibrv_u16 *)malloc( len * sizeof( tibrv_u16 ) );
+         if ( u16s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u16s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u16s;
+         field->size = sizeof( tibrv_u16 );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 * u32s = (tibrv_u32 *)malloc( len * sizeof( tibrv_u32 ) );
+         if ( u32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u32s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u32s;
+         field->size = sizeof( tibrv_u32 );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 * u64s = (tibrv_u64 *)malloc( len * sizeof( tibrv_u64 ) );
+         if ( u64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u64s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u64s;
+         field->size = sizeof( tibrv_u64 );
+      } break;
+   }
+   return field->size;
+}
+
+
+tibrv_u32 MsgField_SetDateTime( tibrvMsgField * field,
+   tibrvMsgDateTime * date )
+{
+   MsgField_CheckDelOldArray( field );
+   field->data.date.sec = date->sec;
+   field->data.date.nsec = date->nsec;
+   field->count = 1;
+   field->type = TIBRVMSG_DATETIME;
+
+   return field->size = sizeof( tibrvMsgDateTime );
+}
+
+
+tibrv_status MsgField_Destroy( tibrvMsgField * field )
+{
+   MsgField_CheckDelOldArray( field );
+   free( field );
+   return TIBRV_OK;
+}
+
+
+void MsgDateTime_GetValues( tibrvMsgDateTime * date, SV * sv_sec,
+   SV * sv_nsec )
+{
+   sv_setiv( sv_sec, date->sec );
+   sv_setuv( sv_nsec, date->nsec );
+}
+
+
+void MsgDateTime_SetSec( tibrvMsgDateTime * date, tibrv_i64 sec )
+{
+   date->sec = sec;
+}
+
+
+void MsgDateTime_SetNsec( tibrvMsgDateTime * date, tibrv_u32 nsec )
+{
+   date->nsec = nsec;
+}
+
+
+tibrv_status MsgDateTime_Destroy( tibrvMsgDateTime * date )
+{
+   free( date );
+   return TIBRV_OK;
+}
+
+
+void Msg_GetCMValues( tibrvMsg message, SV * sv_CMSender, SV * sv_CMSequence,
+   SV * sv_CMTimeLimit )
+{
+   const char * CMSender = NULL;
+   tibrv_u64 CMSequence = 0;
+   tibrv_f64 CMTimeLimit = 0.0;
+
+   if ( tibrvMsg_GetCMSender( message, &CMSender ) == TIBRV_OK )
+      sv_setpv( sv_CMSender, CMSender );
+   if ( tibrvMsg_GetCMSequence( message, &CMSequence ) == TIBRV_OK )
+      sv_setuv( sv_CMSequence, (UV)CMSequence );
+   if ( tibrvMsg_GetCMTimeLimit( message, &CMTimeLimit ) == TIBRV_OK )
+      sv_setnv( sv_CMTimeLimit, CMTimeLimit );
+}

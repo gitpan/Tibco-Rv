@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.03';
 
 
 use constant READ => 1;
@@ -26,8 +26,9 @@ sub new
 
    @$self{ qw/ socketId ioType / } = @params{ qw/ socketId ioType / };
 
-   my ( $status ) = Tibco::Rv::Event_CreateIO( $self->{id}, $self->{queue}{id},
-      $self->{internal_nomsg_callback}, $self->{socketId}, $self->{ioType} );
+   my ( $status ) = Tibco::Rv::Event::Event_CreateIO(
+      $self->{id}, $self->{queue}{id}, $self->{internal_nomsg_callback},
+      $self->{socketId}, $self->{ioType} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    return $self;

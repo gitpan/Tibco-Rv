@@ -6,7 +6,9 @@ Changes
 BUGS
 Makefile.PL
 typemap
+inl
 Rv.pm
+lib/Tibco/Rv/Inline.pm
 lib/Tibco/Rv/Status.pm
 lib/Tibco/Rv/Msg.pm
 lib/Tibco/Rv/Msg/Field.pm
@@ -27,5 +29,11 @@ t/02field.t
 t/03message.t
 t/04event.t
 t/05queue.t
-t/06dispatcher.t
+t/06dispatcher.t_
+eg/tibrvsend.pl
+eg/tibrvlisten.pl
+eg/request.pl
+eg/reply.pl
+eg/cmsend.pl
+eg/cmlisten.pl
 META.yml                                 Module meta-data (added by MakeMaker)

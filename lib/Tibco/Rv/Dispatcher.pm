@@ -2,7 +2,12 @@ package Tibco::Rv::Dispatcher;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.10';
+$VERSION = '1.11';
+
+
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 sub new
@@ -17,8 +22,8 @@ sub new
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = bless { id => undef, %params }, $class;
 
-   my ( $status ) = Tibco::Rv::Dispatcher_Create( $self->{id},
-      $self->{dispatchable}{id}, $self->{idleTimeout} );
+   my ( $status ) = Dispatcher_Create(
+      $self->{id}, $self->{dispatchable}{id}, $self->{idleTimeout} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    $self->name( $params{name} ) if ( defined $params{name} );
 
@@ -41,8 +46,7 @@ sub _setName
 {
    my ( $self, $name ) = @_;
    $name = '' unless ( defined $name );
-   my ( $status ) =
-      Tibco::Rv::tibrvDispatcher_SetName( $self->{id}, $name );
+   my ( $status ) = tibrvDispatcher_SetName( $self->{id}, $name );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{name} = $name;
 }
@@ -57,7 +61,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{id} );
 
-   my ( $status ) = Tibco::Rv::tibrvDispatcher_Destroy( $self->{id} );
+   my ( $status ) = tibrvDispatcher_Destroy( $self->{id} );
    delete $self->{id};
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -160,3 +164,22 @@ program exit.
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+tibrv_status tibrvDispatcher_SetName( tibrvDispatcher dispatcher,
+   const char * name );
+tibrv_status tibrvDispatcher_Destroy( tibrvDispatcher dispatcher );
+
+
+tibrv_status Dispatcher_Create( SV * sv_dispatcher,
+   tibrvDispatchable dispatchable, tibrv_f64 idleTimeout )
+{
+   tibrvDispatcher dispatcher = (tibrvDispatcher)NULL;
+   tibrv_status status = tibrvDispatcher_CreateEx( &dispatcher, dispatchable,
+      idleTimeout );
+   sv_setiv( sv_dispatcher, (IV)dispatcher );
+   return status;
+}

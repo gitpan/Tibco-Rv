@@ -2,13 +2,18 @@ package Tibco::Rv::Transport;
 
 
 use vars qw/ $VERSION $PROCESS /;
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 
 use constant PROCESS_TRANSPORT => 10;
 
 use constant DEFAULT_BATCH => 0;
 use constant TIMER_BATCH => 1;
+
+
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 my ( %defaults );
@@ -33,7 +38,7 @@ sub new
    map { $params{$_} = '' unless ( defined $params{$_} ) } @snd;
    @$self{ @snd } = @params{ @snd };
 
-   my ( $status ) = Tibco::Rv::Transport_Create( @$self{ 'id', @snd } );
+   my ( $status ) = Transport_Create( @$self{ 'id', @snd } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    $self->batchMode( $params{batchMode} )
@@ -72,8 +77,7 @@ sub daemon { return shift->{daemon} }
 sub send
 {
    my ( $self, $msg ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvTransport_Send( $self->{id}, $msg->{id} );
+   my ( $status ) = tibrvTransport_Send( $self->{id}, $msg->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -81,8 +85,8 @@ sub send
 sub sendReply
 {
    my ( $self, $reply, $request ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvTransport_SendReply( $self->{id},
-      $reply->{id}, $request->{id} );
+   my ( $status ) =
+      tibrvTransport_SendReply( $self->{id}, $reply->{id}, $request->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -92,8 +96,8 @@ sub sendRequest
    my ( $self, $request, $timeout ) = @_;
    $timeout = Tibco::Rv::WAIT_FOREVER unless ( defined $timeout );
    my ( $reply );
-   my ( $status ) = Tibco::Rv::Transport_SendRequest( $self->{id},
-      $request->{id}, $reply, $timeout );
+   my ( $status ) =
+      Transport_SendRequest( $self->{id}, $request->{id}, $reply, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
    return ( $status == Tibco::Rv::OK )
@@ -112,8 +116,7 @@ sub _setDescription
 {
    my ( $self, $description ) = @_;
    $description = '' unless ( defined $description );
-   my ( $status ) =
-      Tibco::Rv::tibrvTransport_SetDescription( $self->{id}, $description );
+   my ( $status ) = tibrvTransport_SetDescription( $self->{id}, $description );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{description} = $description;
 }
@@ -131,8 +134,7 @@ sub _setBatchMode
    my ( $self, $batchMode ) = @_;
    Tibco::Rv::die( Tibco::Rv::VERSION_MISMATCH )
       unless ( $Tibco::Rv::TIBRV_VERSION_RELEASE >= 7 );
-   my ( $status ) =
-      Tibco::Rv::tibrvTransport_SetBatchMode( $self->{id}, $batchMode );
+   my ( $status ) = tibrvTransport_SetBatchMode( $self->{id}, $batchMode );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{batchMode} = $batchMode;
 }
@@ -142,7 +144,7 @@ sub createInbox
 {
    my ( $self ) = @_;
    my ( $inbox );
-   my ( $status ) = Tibco::Rv::Transport_CreateInbox( $self->{id}, $inbox );
+   my ( $status ) = Transport_CreateInbox( $self->{id}, $inbox );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $inbox;
 }
@@ -153,8 +155,11 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( defined $self->{id} );
 
-   my ( $status ) = Tibco::Rv::tibrvTransport_Destroy( $self->{id} );
+   my ( $id ) = $self->{id};
    delete @$self{ keys %$self };
+   return if ( $id == PROCESS_TRANSPORT );
+
+   my ( $status ) = tibrvTransport_Destroy( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -344,3 +349,57 @@ L<Tibco::Rv::Msg>
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+
+tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
+   const char * description );
+tibrv_status tibrvTransport_Send( tibrvTransport transport, tibrvMsg message );
+tibrv_status tibrvTransport_SendReply( tibrvTransport transport,
+   tibrvMsg reply, tibrvMsg request );
+#if TIBRV_VERSION_RELEASE < 7
+typedef unsigned int tibrvTransportBatchMode;
+#endif
+tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
+   tibrvTransportBatchMode mode );
+tibrv_status tibrvTransport_Destroy( tibrvTransport transport );
+
+#if TIBRV_VERSION_RELEASE < 7
+tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
+   tibrvTransportBatchMode mode ) { return TIBRV_OK; }
+#endif
+
+
+tibrv_status Transport_Create( SV * sv_transport, const char * service,
+   const char * network, const char * daemon )
+{
+   tibrvTransport transport = (tibrvTransport)NULL;
+   tibrv_status status =
+      tibrvTransport_Create( &transport, service, network, daemon );
+   sv_setiv( sv_transport, (IV)transport );
+   return status;
+}
+
+
+tibrv_status Transport_SendRequest( tibrvTransport transport, tibrvMsg request,
+   SV * sv_reply, tibrv_f64 timeout )
+{
+   tibrvMsg reply = (tibrvMsg)NULL;
+   tibrv_status status =
+      tibrvTransport_SendRequest( transport, request, &reply, timeout );
+   sv_setiv( sv_reply, (IV)reply );
+   return status;
+}
+
+
+tibrv_status Transport_CreateInbox( tibrvTransport transport, SV * sv_inbox )
+{
+   tibrv_u32 limit = TIBRV_SUBJECT_MAX + 1;
+   char inbox[ limit ];
+   tibrv_status status = tibrvTransport_CreateInbox( transport, inbox, limit );
+   sv_setpv( sv_inbox, inbox );
+   return status;
+}

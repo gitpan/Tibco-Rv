@@ -2,12 +2,15 @@ package Tibco::Rv::Cm::Transport;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.10';
+$VERSION = '1.11';
 
 
 use Tibco::Rv::Transport;
-use Tibco::Rv::Cm::Msg;
 use Tibco::Rv::Msg;
+use Tibco::Rv::Cm::Msg;
+use Inline with => 'Tibco::Rv::Inline';
+use Inline C => 'DATA', NAME => __PACKAGE__,
+   VERSION => $Tibco::Rv::Inline::VERSION;
 
 
 my ( %defaults );
@@ -36,8 +39,7 @@ sub new
 
    @$self{ keys %defaults } = @params{ keys %defaults };
 
-   my ( $status ) =
-      Tibco::Rv::cmTransport_Create( $self->{id}, $self->{transport}{id},
+   my ( $status ) = cmTransport_Create( $self->{id}, $self->{transport}{id},
          @$self{ qw/ cmName requestOld ledgerName syncLedger relayAgent / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
@@ -52,7 +54,7 @@ sub new
 sub _getName
 {
    my ( $self ) = @_;
-   Tibco::Rv::cmTransport_GetName( @$self{ qw/ id cmName / } );
+   cmTransport_GetName( @$self{ qw/ id cmName / } );
 }
 
 
@@ -90,7 +92,7 @@ sub createInbox { return shift->{transport}->createInbox( @_ ) }
 sub _setDefaultCMTimeLimit
 {
    my ( $self, $defaultCMTimeLimit ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvcmTransport_SetDefaultCMTimeLimit(
+   my ( $status ) = tibrvcmTransport_SetDefaultCMTimeLimit(
       $self->{id}, $defaultCMTimeLimit );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{defaultCMTimeLimit} = $defaultCMTimeLimit;
@@ -100,8 +102,7 @@ sub _setDefaultCMTimeLimit
 sub send
 {
    my ( $self, $msg ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_Send( $self->{id}, $msg->{id} );
+   my ( $status ) = tibrvcmTransport_Send( $self->{id}, $msg->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -109,7 +110,7 @@ sub send
 sub sendReply
 {
    my ( $self, $reply, $request ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvTransport_SendReply( $self->{id},
+   my ( $status ) = tibrvcmTransport_SendReply( $self->{id},
       $reply->{id}, $request->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -120,8 +121,8 @@ sub sendRequest
    my ( $self, $request, $timeout ) = @_;
    $timeout = Tibco::Rv::WAIT_FOREVER unless ( defined $timeout );
    my ( $reply );
-   my ( $status ) = Tibco::Rv::cmTransport_SendRequest( $self->{id},
-      $request->{id}, $reply, $timeout );
+   my ( $status ) =
+      cmTransport_SendRequest( $self->{id}, $request->{id}, $reply, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
    return ( $status == Tibco::Rv::OK )
@@ -133,7 +134,7 @@ sub addListener
 {
    my ( $self, $cmName, $subject ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_AddListener( $self->{id}, $cmName, $subject );
+      tibrvcmTransport_AddListener( $self->{id}, $cmName, $subject );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
       or $status == Tibco::Rv::NOT_PERMITTED );
    return new Tibco::Rv::Status( status => $status );
@@ -143,8 +144,7 @@ sub addListener
 sub allowListener
 {
    my ( $self, $cmName ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_AllowListener( $self->{id}, $cmName );
+   my ( $status ) = tibrvcmTransport_AllowListener( $self->{id}, $cmName );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -152,8 +152,7 @@ sub allowListener
 sub disallowListener
 {
    my ( $self, $cmName ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_DisallowListener( $self->{id}, $cmName );
+   my ( $status ) = tibrvcmTransport_DisallowListener( $self->{id}, $cmName );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -161,8 +160,8 @@ sub disallowListener
 sub removeListener
 {
    my ( $self, $cmName, $subject ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvcmTransport_RemoveListener(
-      $self->{id}, $cmName, $subject );
+   my ( $status ) =
+      tibrvcmTransport_RemoveListener( $self->{id}, $cmName, $subject );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
       or $status == Tibco::Rv::INVALID_SUBJECT );
    return new Tibco::Rv::Status( status => $status );
@@ -172,8 +171,7 @@ sub removeListener
 sub removeSendState
 {
    my ( $self, $subject ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_RemoveSendState( $self->{id}, $subject );
+   my ( $status ) = tibrvcmTransport_RemoveSendState( $self->{id}, $subject );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -181,7 +179,7 @@ sub removeSendState
 sub sync
 {
    my ( $self ) = @_;
-   my ( $status ) = Tibco::Rv::tibrvcmTransport_SyncLedger( $self->{id} );
+   my ( $status ) = tibrvcmTransport_SyncLedger( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
       or $status == Tibco::Rv::INVALID_ARG );
    return new Tibco::Rv::Status( status => $status );
@@ -191,7 +189,7 @@ sub sync
 sub reviewLedger
 {
    my ( $self, $subject, $callback ) = @_;
-   my ( $status ) = Tibco::Rv::cmTransport_ReviewLedger( $self->{id},
+   my ( $status ) = Tibco::Rv::Event::cmTransport_ReviewLedger( $self->{id},
       $subject, sub { $callback->( Tibco::Rv::Msg->_adopt( shift ) ) } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -200,8 +198,7 @@ sub reviewLedger
 sub connectToRelayAgent
 {
    my ( $self ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_ConnectToRelayAgent( $self->{id} );
+   my ( $status ) = tibrvcmTransport_ConnectToRelayAgent( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
       or $status == Tibco::Rv::INVALID_ARG );
    return new Tibco::Rv::Status( status => $status );
@@ -211,8 +208,7 @@ sub connectToRelayAgent
 sub disconnectFromRelayAgent
 {
    my ( $self ) = @_;
-   my ( $status ) =
-      Tibco::Rv::tibrvcmTransport_DisconnectFromRelayAgent( $self->{id} );
+   my ( $status ) = tibrvcmTransport_DisconnectFromRelayAgent( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
       or $status == Tibco::Rv::INVALID_ARG );
    return new Tibco::Rv::Status( status => $status );
@@ -224,7 +220,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( defined $self->{id} );
 
-   my ( $status ) = Tibco::Rv::tibrvcmTransport_Destroy( $self->{id} );
+   my ( $status ) = tibrvcmTransport_Destroy( $self->{id} );
    delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
@@ -369,3 +365,71 @@ L<Tibco::Rv::Transport>
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
 =cut
+
+
+__DATA__
+__C__
+
+
+tibrv_status tibrvcmTransport_Destroy( tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_SetDefaultCMTimeLimit(
+tibrvcmTransport cmTransport, tibrv_f64 timeLimit );
+tibrv_status tibrvcmTransport_Send( tibrvcmTransport cmTransport,
+   tibrvMsg message );
+tibrv_status tibrvcmTransport_SendReply( tibrvcmTransport cmTransport,
+   tibrvMsg reply, tibrvMsg request );
+tibrv_status tibrvcmTransport_AddListener( tibrvcmTransport cmTransport,
+   const char * cmName, const char * subject );
+tibrv_status tibrvcmTransport_AllowListener( tibrvcmTransport cmTransport,
+   const char * cmName );
+tibrv_status tibrvcmTransport_DisallowListener( tibrvcmTransport cmTransport,
+   const char * cmName );
+tibrv_status tibrvcmTransport_RemoveListener( tibrvcmTransport cmTransport,
+   const char * cmName, const char * subject );
+tibrv_status tibrvcmTransport_ConnectToRelayAgent(
+   tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_DisconnectFromRelayAgent(
+   tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_RemoveSendState( tibrvcmTransport cmTransport,
+   const char * subject );
+tibrv_status tibrvcmTransport_SyncLedger( tibrvcmTransport cmTransport );
+
+
+tibrv_status cmTransport_Create( SV * sv_cmTransport, tibrvTransport transport,
+   SV * sv_cmName, tibrv_bool requestOld, SV * sv_ledgerName,
+   tibrv_bool syncLedger, SV * sv_relayAgent )
+{
+   const char * cmName = NULL;
+   const char * ledgerName = NULL;
+   const char * relayAgent = NULL;
+   tibrvcmTransport cmTransport = (tibrvcmTransport)NULL;
+   tibrv_status status;
+
+   if ( SvOK( sv_cmName ) ) cmName = SvPV( sv_cmName, PL_na );
+   if ( SvOK( sv_ledgerName ) ) ledgerName = SvPV( sv_ledgerName, PL_na );
+   if ( SvOK( sv_relayAgent ) ) relayAgent = SvPV( sv_relayAgent, PL_na );
+
+   status = tibrvcmTransport_Create( &cmTransport, transport, cmName,
+      requestOld, ledgerName, syncLedger, relayAgent );
+   sv_setiv( sv_cmTransport, (IV)cmTransport );
+   return status;
+}
+
+
+void cmTransport_GetName( tibrvcmTransport cmTransport, SV * sv_cmName )
+{
+   const char * cmName;
+   tibrvcmTransport_GetName( cmTransport, &cmName );
+   sv_setpv( sv_cmName, cmName );
+}
+
+
+tibrv_status cmTransport_SendRequest( tibrvcmTransport cmTransport,
+   tibrvMsg request, SV * sv_reply, tibrv_f64 timeout )
+{
+   tibrvMsg reply = (tibrvMsg)NULL;
+   tibrv_status status =
+      tibrvcmTransport_SendRequest( cmTransport, request, &reply, timeout );
+   sv_setiv( sv_reply, (IV)reply );
+   return status;
+}
