@@ -23,11 +23,6 @@ instead of ARG_CONFLICT as specified in the TIB/Rendezvous documentation.
 IO should probably take socketId => \*GLOB instead of a fileno
 
 
-New functions after 7.1 are not yet implemented:
-TibrvcmTransport_SetPublisherInactivityDiscardInterval
-tibrvcmTransport_SetTaskBacklogLimit
-
-
 Queue hook should maybe be set up like Event's onEvent callback?
 
 
@@ -58,16 +53,6 @@ internally in the closure data, Tibco::Rv does not support the
 tibrvEvent_DestroyEx callback.  It could be hacked in by storing the DESTROY
 callback along with the onEvent callback in a hash or something, and passing
 both callbacks into the Perl constructor.
-
-
-Tibco::Rv::Queue::hook( sub { ... } )
-When setting a hook and a timer on the same queue, the hook callback begins,
-but then the timer callback begins and completes, and then it segfaults (the
-hook callback never completes).
-my ( $rv ) = new Tibco::Rv;
-$rv->hook( sub { print "hook\n" } );
-$rv->createTimer;
-$rv->start;
 
 
 tibrvMsg_SetHandlers

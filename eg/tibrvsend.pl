@@ -13,7 +13,7 @@ my ( $rv ) = new Tibco::Rv( %args );
 foreach my $msg ( @ARGV )
 {
    print "Sending message '$msg'\n";
-   $rv->send( $rv->createMsg( sendSubject => $subject, DATA => $_ ) );
+   $rv->send( $rv->createMsg( sendSubject => $subject, DATA => $msg ) );
 }
 
 

@@ -2,7 +2,7 @@ package Tibco::Rv;
 
 
 use vars qw/ $VERSION @CARP_NOT /;
-$VERSION = '1.13';
+$VERSION = '1.14';
 
 
 use Inline with => 'Tibco::Rv::Inline';
@@ -404,11 +404,17 @@ Returns a new L<QueueGroup|Tibco::Rv::QueueGroup> object.
    %args:
       service => $service,
       network => $network,
-      daemon => $daemon
+      daemon => $daemon,
+      description => $description,
+      batchMode => $batchMode
 
 Returns a new L<Transport|Tibco::Rv::Transport> object, using the given
 service/network/daemon arguments.  These arguments can be C<undef> or
-not specified to use the default arguments.
+not specified to use the default arguments.  Description defaults to C<undef>,
+and batchMode defaults to Tibco::Rv::Transport::DEFAULT_BATCH.  If Tibco::Rv
+was built against an Rv 6.x version, then this method will die with a
+Tibco::Rv::VERSION_MISMATCH Status message if you attempt to set batchMode
+to anything other than Tibco::Rv::Transport::DEFAULT_BATCH.
 
 =item $dispatcher = $rv->createDispatcher( %args )
 
@@ -515,11 +521,13 @@ string fields.
       ledgerName => $ledgerName,
       syncLedger => $syncLedger,
       relayAgent => $relayAgent,
-      defaultCMTimeLimit => $defaulCMTimeLimit
+      defaultCMTimeLimit => $defaulCMTimeLimit,
+      publisherInactivityDiscardInterval => $publisherInactivityDiscardInterval
 
 Returns a new L<cmTransport|Tibco::Rv::Cm::Transport> object.  If not
 specified, requestOld defaults to Tibco::Rv::FALSE, syncLedger defaults to
-Tibco::Rv::FALSE, and defaultCMTimeLimit defaults to 0 (no time limit).  If
+Tibco::Rv::FALSE, defaultCMTimeLimit defaults to 0 (no time limit), and
+publisherInactivityDiscardInterval defaults to 0 (no time limit).  If
 service/network/daemon parameters are not specified, the default transport
 is used, otherwise a new transport is created using the given
 service/network/daemon parameters.
@@ -547,6 +555,12 @@ If relayAgent is specified, the transport will connect to the given rvrad.
 defaultCMTimeLimit is the number of seconds a certified sender is guaranteed
 to retain the message.  It may be overridden for each message.  It defaults
 to C<0>.  A time limit of 0 represents no time limit.
+
+See your TIB/Rendezvous documentation for more information about
+publisherInactivityDiscardInterval, which was introduced in tibrv 7.3.  If
+Tibco::Rv was built against a version prior to 7.3, then this method
+will die with a Tibco::Rv::VERSION_MISMATCH Status message if you attempt
+to set publisherInactivityDiscardInterval to anything other than 0.
 
 =item createCmListener
 
@@ -764,11 +778,21 @@ message.
 
 Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
+=head1 WEBSITE
+
+http://branewave.com/perl
+
+=head1 MAILING LIST
+
+perl-tibco-discuss@branewave.com
+
 =head1 COPYRIGHT
 
-Copyright (c) 2003 Paul Sturm.  All rights reserved.  This program is free
+Copyright (c) 2005 Paul Sturm.  All rights reserved.  This program is free
 software; you can redistribute it and/or modify it under the same terms
 as Perl itself.
+
+I would love to hear about my software being used; send me an email!
 
 Tibco::Rv will not operate without TIB/Rendezvous, which is not included
 in this distribution.  You must obtain TIB/Rendezvous (and a license to use
@@ -778,15 +802,15 @@ TIBCO and TIB/Rendezvous are trademarks of TIBCO, Inc.
 
 TIB/Rendezvous copyright notice:
 
- /*
-  * Copyright (c) 1998-2000 TIBCO Software Inc.
-  * All rights reserved.
-  * TIB/Rendezvous is protected under US Patent No. 5,187,787.
-  * For more information, please contact:
-  * TIBCO Software Inc., Palo Alto, California, USA
-  *
-  * @(#)tibrv.h  2.9
-  */
+/*
+ * Copyright (c) 1998-2003 TIBCO Software Inc.
+ * All rights reserved.
+ * TIB/Rendezvous is protected under US Patent No. 5,187,787.
+ * For more information, please contact:
+ * TIBCO Software Inc., Palo Alto, California, USA
+ *
+ * $Id: tibrv.h,v 2.10 2003/01/13 12:08:40 randy Exp $
+ */
 
 =cut
 

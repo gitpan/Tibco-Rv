@@ -30,6 +30,7 @@ t/03message.t
 t/04event.t
 t/05queue.t
 t/06dispatcher.t_
+eg/version.pl
 eg/tibrvsend.pl
 eg/tibrvlisten.pl
 eg/request.pl

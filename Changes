@@ -68,3 +68,12 @@ Revision history for Perl extension Tibco::Rv.
 	- improved Tibco::Rv::die behaviour
 	- setup mailing list (perl-tibco-discuss@branewave.com)
 	- finished Certified Messaging documentation
+
+1.14 Wed Feb 23 18:28:56 PST 2005
+	- removed unecessary pthread header/library
+	- implemented Cm::Transport->publisherInactivityDiscardInterval (7.3+)
+	- spruced up Transport->batchMode version checking
+	- fixed bug in Transport->DESTROY and Queue->DESTROY
+	- fixed bug in eg/tibrvsend.pl
+	- added eg/version.pl
+	- updated copyright notices

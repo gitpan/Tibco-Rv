@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT @CARP_NOT /;
-$VERSION = '1.13';
+$VERSION = '1.14';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -228,7 +228,7 @@ sub DESTROY
    delete @$self{ keys %$self };
    return if ( $id == DEFAULT_QUEUE );
 
-   my ( $status ) = Tibco::Rv::Event::Queue_DestroyEx( $self->{id}, $callback );
+   my ( $status ) = Tibco::Rv::Event::Queue_DestroyEx( $id, $callback );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 

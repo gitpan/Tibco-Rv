@@ -2,7 +2,7 @@ package Tibco::Rv::Transport;
 
 
 use vars qw/ $VERSION $PROCESS /;
-$VERSION = '1.11';
+$VERSION = '1.12';
 
 
 use constant PROCESS_TRANSPORT => 10;
@@ -132,8 +132,6 @@ sub batchMode
 sub _setBatchMode
 {
    my ( $self, $batchMode ) = @_;
-   Tibco::Rv::die( Tibco::Rv::VERSION_MISMATCH )
-      unless ( $Tibco::Rv::TIBRV_VERSION_RELEASE >= 7 );
    my ( $status ) = tibrvTransport_SetBatchMode( $self->{id}, $batchMode );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{batchMode} = $batchMode;
@@ -159,7 +157,7 @@ sub DESTROY
    delete @$self{ keys %$self };
    return if ( $id == PROCESS_TRANSPORT );
 
-   my ( $status ) = tibrvTransport_Destroy( $self->{id} );
+   my ( $status ) = tibrvTransport_Destroy( $id );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -369,7 +367,8 @@ tibrv_status tibrvTransport_Destroy( tibrvTransport transport );
 
 #if TIBRV_VERSION_RELEASE < 7
 tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
-   tibrvTransportBatchMode mode ) { return TIBRV_OK; }
+   tibrvTransportBatchMode mode )
+{ return TIBRV_VERSION_MISMATCH; }
 #endif
 
 

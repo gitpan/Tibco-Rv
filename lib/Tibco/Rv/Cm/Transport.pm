@@ -2,7 +2,7 @@ package Tibco::Rv::Cm::Transport;
 
 
 use vars qw/ $VERSION @CARP_NOT /;
-$VERSION = '1.12';
+$VERSION = '1.13';
 
 
 use Tibco::Rv::Transport;
@@ -20,7 +20,7 @@ BEGIN
    %defaults = ( transport => undef, cmName => undef,
       requestOld => Tibco::Rv::FALSE, ledgerName => undef,
       syncLedger => Tibco::Rv::FALSE, relayAgent => undef,
-      defaultCMTimeLimit => 0 );
+      defaultCMTimeLimit => 0, publisherInactivityDiscardInterval => 0 );
 }
 
 
@@ -47,6 +47,9 @@ sub new
    $self->_getName unless ( defined $self->{cmName} );
    $self->defaultCMTimeLimit( $self->{defaultCMTimeLimit} )
       if ( $self->{defaultCMTimeLimit} != 0 );
+   $self->publisherInactivityDiscardInterval(
+      $params{publisherInactivityDiscardInterval} )
+         if ( $params{publisherInactivityDiscardInterval} != 0 );
 
    return $self;
 }
@@ -216,6 +219,24 @@ sub disconnectFromRelayAgent
 }
 
 
+sub publisherInactivityDiscardInterval
+{
+   my ( $self ) = shift;
+   return @_ ? $self->_setPublisherInactivityDiscardInterval( @_ )
+      : $self->{publisherInactivityDiscardInterval};
+}
+
+
+sub _setPublisherInactivityDiscardInterval
+{
+   my ( $self, $timeout ) = @_;
+   my ( $status ) = tibrvcmTransport_SetPublisherInactivityDiscardInterval(
+      $self->{id}, $timeout );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+   return $self->{publisherInactivityDiscardInterval} = $timeout;
+}
+
+
 sub DESTROY
 {
    my ( $self ) = @_;
@@ -269,13 +290,15 @@ sequence.
       ledgerName => $ledgerName,
       syncLedger => $syncLedger,
       relayAgent => $relayAgent,
-      defaultCMTimeLimit => $defaulCMTimeLimit
+      defaultCMTimeLimit => $defaulCMTimeLimit,
+      publisherInactivityDiscardInterval => $publisherInactivityDiscardInterval
 
 Creates a C<Tibco::Rv::Cm::Transport>.  If not specified, requestOld defaults
-to Tibco::Rv::FALSE, syncLedger defaults to Tibco::Rv::FALSE, and
-defaultCMTimeLimit defaults to 0 (no time limit).  If transport is not
-specified, a new transport is created using the given service/network/daemon
-parameters (which default as usual).
+to Tibco::Rv::FALSE, syncLedger defaults to Tibco::Rv::FALSE,
+defaultCMTimeLimit defaults to 0 (no time limit), and
+publisherInactivityDiscardInterval defaults to 0 (no time limit).  If transport
+is not specified, a new transport is created using the given
+service/network/daemon parameters (which default as usual).
 
 cmName is the certified messaging correspondent name.  If cmName is C<undef>,
 then a unique, non-reusable name is generated for the duration of the object.
@@ -298,8 +321,14 @@ asynchronously.
 If relayAgent is specified, the transport will connect to the given rvrad.
 
 defaultCMTimeLimit is the number of seconds a certified sender is guaranteed
-to retain the message.  It may be overridden for each message.  It defaults
-to C<0>.  A time limit of 0 represents no time limit.
+to retain the message.  It may be overridden for each message.  A time limit
+of 0 represents no time limit.
+
+See your TIB/Rendezvous documentation for more information about
+publisherInactivityDiscardInterval, which was introduced in tibrv 7.3.  If
+Tibco::Rv was built against a version prior to 7.3, then the constructor
+will die with a Tibco::Rv::VERSION_MISMATCH Status message if you attempt
+to set publisherInactivityDiscardInterval to anything other than 0.
 
 =back
 
@@ -377,6 +406,21 @@ for messages that otherwise do not have a time limit assigned.
 =item $transport->defaultCMTimeLimit( $defaultCMTimeLimit )
 
 Set the default certified messaging time limit for C<$transport>.
+
+=item $interval = $transport->publisherInactivityDiscardInterval
+
+Returns the publisherInactivityDiscardInterval of C<$transport>.  See your
+TIB/Rendezvous documentation for more information about
+publisherInactivityDiscardInterval, which was introduced in tibrv 7.3.  If
+Tibco::Rv was built against a version prior to 7.3, this method will always
+return 0.
+
+=item $transport->publisherInactivityDiscardInterval( $interval )
+
+See your TIB/Rendezvous documentation for more information about
+publisherInactivityDiscardInterval, which was introduced in tibrv 7.3.  If
+Tibco::Rv was built against a version prior to 7.3, this method will die
+with a Tibco::Rv::VERSION_MISMATCH Status message.
 
 =item $transport->send( $msg )
 
@@ -534,6 +578,13 @@ tibrv_status tibrvcmTransport_DisconnectFromRelayAgent(
 tibrv_status tibrvcmTransport_RemoveSendState( tibrvcmTransport cmTransport,
    const char * subject );
 tibrv_status tibrvcmTransport_SyncLedger( tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_SetPublisherInactivityDiscardInterval(
+tibrvcmTransport cmTransport, tibrv_i32 timeout );
+#if TIBRV_VERSION_RELEASE < 7 || ( TIBRV_VERSION_RELEASE == 7 && TIBRV_VERSION_MINOR < 3 )
+tibrv_status tibrvcmTransport_SetPublisherInactivityDiscardInterval(
+   tibrvcmTransport cmTransport, tibrv_i32 timeout )
+{ return TIBRV_VERSION_MISMATCH; }
+#endif
 
 
 tibrv_status cmTransport_Create( SV * sv_cmTransport, tibrvTransport transport,
