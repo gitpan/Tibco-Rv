@@ -3,10 +3,14 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
-# untested
+use constant READ => 1;
+use constant WRITE => 2;
+use constant EXCEPTION => 4;
+
+
 sub new
 {
    my ( $proto, $queue, $socketId, $ioType, $callback ) = @_;

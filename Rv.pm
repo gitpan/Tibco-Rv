@@ -5,7 +5,7 @@ use vars qw/ $VERSION /;
 
 BEGIN
 {
-   $VERSION = '0.90';
+   $VERSION = '0.99';
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
 TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
@@ -115,10 +115,6 @@ use constant LISTEN_EVENT => 3;
 use constant WAIT_FOREVER => -1.0;
 use constant NO_WAIT => 0.0;
 
-use constant IO_READ => 1;
-use constant IO_WRITE => 2;
-use constant IO_EXCEPTION => 4;
-
 
 use Tibco::Rv::Status;
 use Tibco::Rv::Transport;
@@ -198,9 +194,17 @@ sub createQueue { return shift->{queueGroup}->createQueue( @_ ) }
 sub add { shift->{queueGroup}->add( @_ ) }
 sub remove { shift->{queueGroup}->remove( @_ ) }
 
-sub createListener { return shift->{queue}->createListener( @_ ) }
 sub createTimer { return shift->{queue}->createTimer( @_ ) }
 sub createIO { return shift->{queue}->createIO( @_ ) }
+
+
+sub createListener
+{
+   my ( $self, $subject, $callback ) = @_;
+   return
+      $self->{queue}->createListener( $self->{transport}, $subject, $callback );
+}
+
 
 sub send { shift->{transport}->send( @_ ) }
 sub sendReply { shift->{transport}->sendReply( @_ ) }
@@ -328,10 +332,6 @@ tibrv_status tibrvMsg_AddU32Ex( tibrvMsg message, const char * fieldName,
    tibrv_u32 value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_AddU64Ex( tibrvMsg message, const char * fieldName,
    tibrv_u64 value, tibrv_u16 fieldId );
-tibrv_status tibrvMsg_AddIPAddr32Ex( tibrvMsg message, const char * fieldName,
-   tibrv_ipaddr32 value, tibrv_u16 fieldId );
-tibrv_status tibrvMsg_AddIPPort16Ex( tibrvMsg message, const char * fieldName,
-   tibrv_ipport16 value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_AddStringEx( tibrvMsg message, const char * fieldName,
    const char * value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_AddMsgEx( tibrvMsg message, const char * fieldName,
@@ -360,10 +360,6 @@ tibrv_status tibrvMsg_UpdateU32Ex( tibrvMsg message, const char * fieldName,
    tibrv_u32 value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_UpdateU64Ex( tibrvMsg message, const char * fieldName,
    tibrv_u64 value, tibrv_u16 fieldId );
-tibrv_status tibrvMsg_UpdateIPAddr32Ex( tibrvMsg message,
-   const char * fieldName, tibrv_ipaddr32 value, tibrv_u16 fieldId );
-tibrv_status tibrvMsg_UpdateIPPort16Ex( tibrvMsg message,
-   const char * fieldName, tibrv_ipport16 value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_UpdateStringEx( tibrvMsg message, const char * fieldName,
    const char * value, tibrv_u16 fieldId );
 tibrv_status tibrvMsg_UpdateMsgEx( tibrvMsg message, const char * fieldName,
@@ -433,7 +429,7 @@ tibrv_status Msg_Create( SV * sv_message )
 }
 
 
-void Msg__GetValues( tibrvMsg message, SV * sv_sendSubject,
+void Msg_GetValues( tibrvMsg message, SV * sv_sendSubject,
    SV * sv_replySubject )
 {
    const char * sendSubject = NULL;
@@ -532,13 +528,13 @@ tibrv_status Msg_GetScalar( tibrvMsg message, tibrv_u8 type,
          tibrv_ipaddr32 ipaddr32;
          status =
             tibrvMsg_GetIPAddr32Ex( message, fieldName, &ipaddr32, fieldId );
-         sv_setuv( sv_value, (UV)ipaddr32 );
+         sv_setuv( sv_value, (UV)ntohl( ipaddr32 ) );
       } break;
       case TIBRVMSG_IPPORT16: {
          tibrv_ipport16 ipport16;
          status =
             tibrvMsg_GetIPPort16Ex( message, fieldName, &ipport16, fieldId );
-         sv_setiv( sv_value, (IV)ipport16 );
+         sv_setuv( sv_value, (UV)ntohs( ipport16 ) );
       } break;
       case TIBRVMSG_STRING: {
          const char * str;
@@ -574,6 +570,83 @@ tibrv_status Msg_GetScalar( tibrvMsg message, tibrv_u8 type,
 
    return status;
 }
+
+
+tibrv_status Msg_GetArray( tibrvMsg message, tibrv_u8 type, const char * name,
+   SV * elts, tibrv_u16 id )
+{
+   int i = 0;
+   tibrv_status status = TIBRV_OK;
+   tibrv_u32 n = 0;
+   AV * e = (AV *)SvRV( elts );
+
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         const tibrv_f32 * f32s;
+         status = tibrvMsg_GetF32ArrayEx( message, name, &f32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSVnv( f32s[ i ] ) );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         const tibrv_f64 * f64s;
+         status = tibrvMsg_GetF64ArrayEx( message, name, &f64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSVnv( f64s[ i ] ) );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         const tibrv_i8 * i8s;
+         status = tibrvMsg_GetI8ArrayEx( message, name, &i8s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i8s[ i ] ) );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         const tibrv_i16 * i16s;
+         status = tibrvMsg_GetI16ArrayEx( message, name, &i16s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i16s[ i ] ) );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         const tibrv_i32 * i32s;
+         status = tibrvMsg_GetI32ArrayEx( message, name, &i32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i32s[ i ] ) );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         const tibrv_i64 * i64s;
+         status = tibrvMsg_GetI64ArrayEx( message, name, &i64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( i64s[ i ] ) );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         const tibrv_u8 * u8s;
+         status = tibrvMsg_GetU8ArrayEx( message, name, &u8s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u8s[ i ] ) );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         const tibrv_u16 * u16s;
+         status = tibrvMsg_GetU16ArrayEx( message, name, &u16s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u16s[ i ] ) );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         const tibrv_u32 * u32s;
+         status = tibrvMsg_GetU32ArrayEx( message, name, &u32s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u32s[ i ] ) );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         const tibrv_u64 * u64s;
+         status = tibrvMsg_GetU64ArrayEx( message, name, &u64s, &n, id );
+         av_extend( e, n );
+         for ( i = 0; i < n; i ++ ) av_store( e, i, newSViv( u64s[ i ] ) );
+      } break;
+   }
+
+   return status;
+}
+
 
 
 tibrv_status Msg_GetFieldByIndex( tibrvMsg message, SV * sv_field,
@@ -666,6 +739,20 @@ tibrv_status Msg_ConvertToString( tibrvMsg message, SV * sv_str )
 }
 
 
+tibrv_status Msg_AddIPAddr32( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return tibrvMsg_AddIPAddr32Ex( message, fieldName, htonl( value ), fieldId );
+}
+
+
+tibrv_status Msg_AddIPPort16( tibrvMsg message, const char * fieldName,
+   tibrv_ipport16 value, tibrv_u16 fieldId )
+{
+   return tibrvMsg_AddIPPort16Ex( message, fieldName, htons( value ), fieldId );
+}
+
+
 tibrv_status Msg_AddOpaque( tibrvMsg message, const char * fieldName,
    SV * sv_value, tibrv_u16 fieldId )
 {
@@ -681,6 +768,96 @@ tibrv_status Msg_AddXml( tibrvMsg message, const char * fieldName,
    STRLEN len;
    void * buf = SvPV( sv_value, len );
    return tibrvMsg_AddXmlEx( message, fieldName, buf, len, fieldId );
+}
+
+
+tibrv_status Msg_AddOrUpdateArray( tibrvMsg message, tibrv_bool isAdd,
+   tibrv_u8 type, const char * fieldName, SV * elts, tibrv_u16 fieldId )
+{
+   tibrv_status status = TIBRV_OK;
+   I32 len;
+   AV * e;
+   int i;
+   if ( SvTYPE( SvRV( elts ) ) != SVt_PVAV ) return TIBRV_INVALID_ARG;
+   e = (AV *)SvRV( elts );
+
+   len = av_len( e ) + 1;
+   if ( len == 0 ) return TIBRV_OK;
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 f32s[ len ];
+         for ( i = 0; i < len; i ++ ) f32s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddF32ArrayEx( message, fieldName, f32s, len, fieldId ) :
+            tibrvMsg_UpdateF32ArrayEx( message, fieldName, f32s, len, fieldId );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 f64s[ len ];
+         for ( i = 0; i < len; i ++ ) f64s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddF64ArrayEx( message, fieldName, f64s, len, fieldId ) :
+            tibrvMsg_UpdateF64ArrayEx( message, fieldName, f64s, len, fieldId );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 i8s[ len ];
+         for ( i = 0; i < len; i ++ ) i8s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI8ArrayEx( message, fieldName, i8s, len, fieldId ) :
+            tibrvMsg_UpdateI8ArrayEx( message, fieldName, i8s, len, fieldId );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 i16s[ len ];
+         for ( i = 0; i < len; i ++ ) i16s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI16ArrayEx( message, fieldName, i16s, len, fieldId ) :
+            tibrvMsg_UpdateI16ArrayEx( message, fieldName, i16s, len, fieldId );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 i32s[ len ];
+         for ( i = 0; i < len; i ++ ) i32s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI32ArrayEx( message, fieldName, i32s, len, fieldId ) :
+            tibrvMsg_UpdateI32ArrayEx( message, fieldName, i32s, len, fieldId );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 i64s[ len ];
+         for ( i = 0; i < len; i ++ ) i64s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddI64ArrayEx( message, fieldName, i64s, len, fieldId ) :
+            tibrvMsg_UpdateI64ArrayEx( message, fieldName, i64s, len, fieldId );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 u8s[ len ];
+         for ( i = 0; i < len; i ++ ) u8s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU8ArrayEx( message, fieldName, u8s, len, fieldId ) :
+            tibrvMsg_UpdateU8ArrayEx( message, fieldName, u8s, len, fieldId );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 u16s[ len ];
+         for ( i = 0; i < len; i ++ ) u16s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU16ArrayEx( message, fieldName, u16s, len, fieldId ) :
+            tibrvMsg_UpdateU16ArrayEx( message, fieldName, u16s, len, fieldId );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 u32s[ len ];
+         for ( i = 0; i < len; i ++ ) u32s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU32ArrayEx( message, fieldName, u32s, len, fieldId ) :
+            tibrvMsg_UpdateU32ArrayEx( message, fieldName, u32s, len, fieldId );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 u64s[ len ];
+         for ( i = 0; i < len; i ++ ) u64s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         status = isAdd ?
+            tibrvMsg_AddU64ArrayEx( message, fieldName, u64s, len, fieldId ) :
+            tibrvMsg_UpdateU64ArrayEx( message, fieldName, u64s, len, fieldId );
+      } break;
+   }
+
+   return status;
 }
 
 
@@ -702,6 +879,22 @@ tibrv_status Msg_UpdateXml( tibrvMsg message, const char * fieldName,
 }
 
 
+tibrv_status Msg_UpdateIPAddr32( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return
+      tibrvMsg_UpdateIPAddr32Ex( message, fieldName, htonl( value ), fieldId );
+}
+
+
+tibrv_status Msg_UpdateIPPort16( tibrvMsg message, const char * fieldName,
+   tibrv_ipaddr32 value, tibrv_u16 fieldId )
+{
+   return
+      tibrvMsg_UpdateIPPort16Ex( message, fieldName, htons( value ), fieldId );
+}
+
+
 tibrv_status MsgDateTime_Create( SV * sv_date, tibrv_i64 sec, tibrv_u32 nsec );
 void MsgField_SetName( tibrvMsgField * field, const char * name );
 void MsgField_SetId( tibrvMsgField * field, tibrv_u16 id );
@@ -720,14 +913,112 @@ tibrv_status MsgField_Create( SV * sv_field )
 }
 
 
-void MsgField__GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
+void MsgField_GetArrayValue( tibrvMsgField * field, SV * sv_data )
+{
+   int i;
+   AV * e = newAV( );
+   av_extend( e, field->count );
+
+   switch ( field->type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 * f32s = (tibrv_f32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSVnv( f32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 * f64s = (tibrv_f64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSVnv( f64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 * i8s = (tibrv_i8 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i8s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 * i16s = (tibrv_i16 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i16s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 * i32s = (tibrv_i32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 * i64s = (tibrv_i64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( i64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 * u8s = (tibrv_u8 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u8s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 * u16s = (tibrv_u16 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u16s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 * u32s = (tibrv_u32 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u32s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 * u64s = (tibrv_u64 *)field->data.array;
+         for ( i = 0; i < field->count; i ++ )
+         {
+            SV * elt = newSViv( u64s[ i ] );
+            SvREFCNT_inc( elt );
+            if ( av_store( e, i, elt ) == NULL ) SvREFCNT_dec( elt );
+         }
+      } break;
+   }
+   sv_setsv( sv_data, newRV( (SV *)e ) );
+}
+
+
+void MsgField_GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
    SV * sv_size, SV * sv_count, SV * sv_type, SV * sv_data )
 {
-   sv_setpv( sv_name, field->name );
-   sv_setuv( sv_id, (UV)field->id );
-   sv_setuv( sv_size, (UV)field->size );
-   sv_setuv( sv_count, (UV)field->count );
-   sv_setuv( sv_type, (UV)field->type );
    switch ( field->type )
    {
       case TIBRVMSG_MSG: sv_setiv( sv_data, (IV)field->data.msg );
@@ -739,25 +1030,25 @@ void MsgField__GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
          sv_setpvn( sv_data, field->data.buf, field->size );
       break;
       case TIBRVMSG_I8ARRAY:
-      break;
       case TIBRVMSG_U8ARRAY:
-      break;
       case TIBRVMSG_I16ARRAY:
-      break;
       case TIBRVMSG_U16ARRAY:
-      break;
       case TIBRVMSG_I32ARRAY:
-      break;
       case TIBRVMSG_U32ARRAY:
-      break;
       case TIBRVMSG_I64ARRAY:
-      break;
       case TIBRVMSG_U64ARRAY:
-      break;
       case TIBRVMSG_F32ARRAY:
-      break;
-      case TIBRVMSG_F64ARRAY:
-      break;
+      case TIBRVMSG_F64ARRAY: {
+         size_t len = field->size * field->count;
+         void * array = malloc( len );
+         if ( array == NULL )
+         {
+            field->size = field->count = 0;
+            break;
+         }
+         field->data.array = memcpy( array, field->data.array, len );
+         MsgField_GetArrayValue( field, sv_data );
+      } break;
       case TIBRVMSG_BOOL: sv_setiv( sv_data, (IV)field->data.boolean ); break;
       case TIBRVMSG_I8: sv_setiv( sv_data, (IV)field->data.i8 ); break;
       case TIBRVMSG_U8: sv_setuv( sv_data, (UV)field->data.u8 ); break;
@@ -770,16 +1061,21 @@ void MsgField__GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
       case TIBRVMSG_F32: sv_setnv( sv_data, field->data.f32 ); break;
       case TIBRVMSG_F64: sv_setnv( sv_data, field->data.f64 ); break;
       case TIBRVMSG_IPPORT16:
-         sv_setuv( sv_data, ntohs( (UV)field->data.ipport16 ) );
+         sv_setuv( sv_data, (UV)ntohs( field->data.ipport16 ) );
       break;
       case TIBRVMSG_IPADDR32:
-         sv_setuv( sv_data, ntohs( (UV)field->data.ipaddr32 ) );
+         sv_setuv( sv_data, (UV)ntohl( field->data.ipaddr32 ) );
       break;
       case TIBRVMSG_DATETIME:
          MsgDateTime_Create( sv_data, (IV)field->data.date.sec,
             (UV)field->data.date.nsec );
       break;
    }
+   sv_setpv( sv_name, field->name );
+   sv_setuv( sv_id, (UV)field->id );
+   sv_setuv( sv_size, (UV)field->size );
+   sv_setuv( sv_count, (UV)field->count );
+   sv_setuv( sv_type, (UV)field->type );
 }
 
 
@@ -795,8 +1091,29 @@ void MsgField_SetId( tibrvMsgField * field, tibrv_u16 id )
 }
 
 
+void MsgField_CheckDelOldArray( tibrvMsgField * field )
+{
+   switch ( field->type )
+   {
+      case TIBRVMSG_F32ARRAY:
+      case TIBRVMSG_F64ARRAY:
+      case TIBRVMSG_I8ARRAY:
+      case TIBRVMSG_I16ARRAY:
+      case TIBRVMSG_I32ARRAY:
+      case TIBRVMSG_I64ARRAY:
+      case TIBRVMSG_U8ARRAY:
+      case TIBRVMSG_U16ARRAY:
+      case TIBRVMSG_U32ARRAY:
+      case TIBRVMSG_U64ARRAY:
+         free( (void *)field->data.array );
+         field->data.array = NULL;
+   }
+}
+
+
 tibrv_u32 MsgField_SetMsg( tibrvMsgField * field, tibrvMsg message )
 {
+   MsgField_CheckDelOldArray( field );
    field->data.msg = message;
    field->size = 0;
    tibrvMsg_GetByteSize( message, &field->size );
@@ -807,10 +1124,11 @@ tibrv_u32 MsgField_SetMsg( tibrvMsgField * field, tibrvMsg message )
 }
 
 
-tibrv_u32 MsgField__SetBuf( tibrvMsgField * field, SV * sv_buf, tibrv_u8 type )
+tibrv_u32 MsgField_SetBuf( tibrvMsgField * field, tibrv_u8 type, SV * sv_buf )
 {
    STRLEN len;
    char * buf = SvPV( sv_buf, len );
+   MsgField_CheckDelOldArray( field );
    switch ( type )
    {
       case TIBRVMSG_STRING:
@@ -830,8 +1148,9 @@ tibrv_u32 MsgField__SetBuf( tibrvMsgField * field, SV * sv_buf, tibrv_u8 type )
 }
 
 
-tibrv_u32 MsgField__SetElt( tibrvMsgField * field, SV * sv_elt, tibrv_u8 type )
+tibrv_u32 MsgField_SetElt( tibrvMsgField * field, tibrv_u8 type, SV * sv_elt )
 {
+   MsgField_CheckDelOldArray( field );
    field->count = 1;
    field->type = type;
    switch ( type )
@@ -851,7 +1170,7 @@ tibrv_u32 MsgField__SetElt( tibrvMsgField * field, SV * sv_elt, tibrv_u8 type )
          field->data.ipport16 = htons( SvUV( sv_elt ) );
       break;
       case TIBRVMSG_IPADDR32:
-         field->data.ipaddr32 = htons( SvUV( sv_elt ) );
+         field->data.ipaddr32 = htonl( SvUV( sv_elt ) );
       break;
    }
    switch ( type )
@@ -879,9 +1198,101 @@ tibrv_u32 MsgField__SetElt( tibrvMsgField * field, SV * sv_elt, tibrv_u8 type )
 }
 
 
-tibrv_u32 MsgField__SetDateTime( tibrvMsgField * field,
+tibrv_u32 MsgField_SetAry( tibrvMsgField * field, tibrv_u8 type, SV * sv_ary )
+{
+   AV * e;
+   I32 len = 0;
+   int i;
+   MsgField_CheckDelOldArray( field );
+
+   if ( SvTYPE( SvRV( sv_ary ) ) != SVt_PVAV ) return 0;
+
+   e = (AV *)SvRV( sv_ary );
+   field->count = len = av_len( e ) + 1;
+   field->type = type;
+   field->size = 0;
+
+   switch ( type )
+   {
+      case TIBRVMSG_F32ARRAY: {
+         tibrv_f32 * f32s = (tibrv_f32 *)malloc( len * sizeof( tibrv_f32 ) );
+         if ( f32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) f32s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         field->data.array = f32s;
+         field->size = sizeof( tibrv_f32 );
+      } break;
+      case TIBRVMSG_F64ARRAY: {
+         tibrv_f64 * f64s = (tibrv_f64 *)malloc( len * sizeof( tibrv_f64 ) );
+         if ( f64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) f64s[ i ] = SvNV( *av_fetch( e, i, 0 ) );
+         field->data.array = f64s;
+         field->size = sizeof( tibrv_f64 );
+      } break;
+      case TIBRVMSG_I8ARRAY: {
+         tibrv_i8 * i8s = (tibrv_i8 *)malloc( len * sizeof( tibrv_i8 ) );
+         if ( i8s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i8s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i8s;
+         field->size = sizeof( tibrv_i8 );
+      } break;
+      case TIBRVMSG_I16ARRAY: {
+         tibrv_i16 * i16s = (tibrv_i16 *)malloc( len * sizeof( tibrv_i16 ) );
+         if ( i16s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i16s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i16s;
+         field->size = sizeof( tibrv_i16 );
+      } break;
+      case TIBRVMSG_I32ARRAY: {
+         tibrv_i32 * i32s = (tibrv_i32 *)malloc( len * sizeof( tibrv_i32 ) );
+         if ( i32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i32s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i32s;
+         field->size = sizeof( tibrv_i32 );
+      } break;
+      case TIBRVMSG_I64ARRAY: {
+         tibrv_i64 * i64s = (tibrv_i64 *)malloc( len * sizeof( tibrv_i64 ) );
+         if ( i64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) i64s[ i ] = SvIV( *av_fetch( e, i, 0 ) );
+         field->data.array = i64s;
+         field->size = sizeof( tibrv_i64 );
+      } break;
+      case TIBRVMSG_U8ARRAY: {
+         tibrv_u8 * u8s = (tibrv_u8 *)malloc( len * sizeof( tibrv_u8 ) );
+         if ( u8s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u8s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u8s;
+         field->size = sizeof( tibrv_u8 );
+      } break;
+      case TIBRVMSG_U16ARRAY: {
+         tibrv_u16 * u16s = (tibrv_u16 *)malloc( len * sizeof( tibrv_u16 ) );
+         if ( u16s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u16s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u16s;
+         field->size = sizeof( tibrv_u16 );
+      } break;
+      case TIBRVMSG_U32ARRAY: {
+         tibrv_u32 * u32s = (tibrv_u32 *)malloc( len * sizeof( tibrv_u32 ) );
+         if ( u32s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u32s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u32s;
+         field->size = sizeof( tibrv_u32 );
+      } break;
+      case TIBRVMSG_U64ARRAY: {
+         tibrv_u64 * u64s = (tibrv_u64 *)malloc( len * sizeof( tibrv_u64 ) );
+         if ( u64s == NULL ) return 0;
+         for ( i = 0; i < len; i ++ ) u64s[ i ] = SvUV( *av_fetch( e, i, 0 ) );
+         field->data.array = u64s;
+         field->size = sizeof( tibrv_u64 );
+      } break;
+   }
+   return field->size;
+}
+
+
+tibrv_u32 MsgField_SetDateTime( tibrvMsgField * field,
    tibrvMsgDateTime * date )
 {
+   MsgField_CheckDelOldArray( field );
    field->data.date.sec = date->sec;
    field->data.date.nsec = date->nsec;
    field->count = 1;
@@ -893,6 +1304,7 @@ tibrv_u32 MsgField__SetDateTime( tibrvMsgField * field,
 
 tibrv_status MsgField_Destroy( tibrvMsgField * field )
 {
+   MsgField_CheckDelOldArray( field );
    free( field );
    return TIBRV_OK;
 }
@@ -910,7 +1322,7 @@ tibrv_status MsgDateTime_Create( SV * sv_date, tibrv_i64 sec, tibrv_u32 nsec )
 }
 
 
-void MsgDateTime__GetValues( tibrvMsgDateTime * date, SV * sv_sec,
+void MsgDateTime_GetValues( tibrvMsgDateTime * date, SV * sv_sec,
    SV * sv_nsec )
 {
    sv_setiv( sv_sec, date->sec );

@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
 use constant DEFAULT_QUEUE => 1;

@@ -5,7 +5,6 @@ INSTALL
 Changes
 BUGS
 Makefile.PL
-test.pl
 typemap
 Rv.pm
 lib/Tibco/Rv/Status.pm
@@ -20,3 +19,8 @@ lib/Tibco/Rv/Queue.pm
 lib/Tibco/Rv/QueueGroup.pm
 lib/Tibco/Rv/Dispatcher.pm
 lib/Tibco/Rv/Transport.pm
+t/01basic.t
+t/02field.t
+t/03message.t
+t/04events.t
+t/05dispatcher.t

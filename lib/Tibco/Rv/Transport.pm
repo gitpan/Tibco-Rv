@@ -2,7 +2,7 @@ package Tibco::Rv::Transport;
 
 
 use vars qw/ $VERSION $PROCESS /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
 use constant PROCESS_TRANSPORT => 10;

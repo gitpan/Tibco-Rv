@@ -2,7 +2,7 @@ package Tibco::Rv::Msg;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
 use constant FIELDNAME_MAX => 127;
@@ -95,8 +95,12 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::Msg__GetValues( @$self{ qw/ id sendSubject replySubject / } );
+   Tibco::Rv::Msg_GetValues( @$self{ qw/ id sendSubject replySubject / } );
 }
+
+
+sub createField { shift; return new Tibco::Rv::Msg::Field( @_ ) }
+sub createDateTime { shift; return new Tibco::Rv::Msg::DateTime( @_ ) }
 
 
 sub copy
@@ -155,6 +159,7 @@ sub reset
 {
    my ( $self ) = @_;
    my ( $status ) = Tibco::Rv::tibrvMsg_Reset( $self->{id} );
+   @$self{ keys %defaults } = values %defaults;
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -242,11 +247,20 @@ sub addU8 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU8Ex', @_ ) }
 sub addU16 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU16Ex', @_ ) }
 sub addU32 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU32Ex', @_ ) }
 sub addU64 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddU64Ex', @_ ) }
-sub addIPAddr32 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddIPAddr32Ex', @_ ) }
-sub addIPPort16 { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddIPPort16Ex', @_ ) }
+sub addIPPort16 { shift->_addScalar( 'Tibco::Rv::Msg_AddIPPort16', @_ ) }
 sub addString { shift->_addScalar( 'Tibco::Rv::tibrvMsg_AddStringEx', @_ ) }
 sub addOpaque { shift->_addScalar( 'Tibco::Rv::Msg_AddOpaque', @_ ) }
 sub addXml { shift->_addScalar( 'Tibco::Rv::Msg_AddXml', @_ ) }
+
+
+sub addIPAddr32
+{
+   my ( $self, $fieldName, $ipaddr32, $fieldId ) = @_;
+   my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
+   $ipaddr32 = ( $a << 24 ) + ( $b << 16 ) + ( $c << 8 ) + $d;
+   $self->_addScalar( 'Tibco::Rv::Msg_AddIPAddr32',
+      $fieldName, $ipaddr32, $fieldId );
+}
 
 
 sub addMsg
@@ -263,6 +277,18 @@ sub addDateTime
    $self->_addScalar( 'Tibco::Rv::tibrvMsg_AddDateTimeEx',
       $fieldName, $date->{ptr}, $fieldId );
 }
+
+
+sub addF32Array { shift->_addArray( Tibco::Rv::Msg::F32ARRAY, @_ ) }
+sub addF64Array { shift->_addArray( Tibco::Rv::Msg::F64ARRAY, @_ ) }
+sub addI8Array { shift->_addArray( Tibco::Rv::Msg::I8ARRAY, @_ ) }
+sub addI16Array { shift->_addArray( Tibco::Rv::Msg::I16ARRAY, @_ ) }
+sub addI32Array { shift->_addArray( Tibco::Rv::Msg::I32ARRAY, @_ ) }
+sub addI64Array { shift->_addArray( Tibco::Rv::Msg::I64ARRAY, @_ ) }
+sub addU8Array { shift->_addArray( Tibco::Rv::Msg::U8ARRAY, @_ ) }
+sub addU16Array { shift->_addArray( Tibco::Rv::Msg::U16ARRAY, @_ ) }
+sub addU32Array { shift->_addArray( Tibco::Rv::Msg::U32ARRAY, @_ ) }
+sub addU64Array { shift->_addArray( Tibco::Rv::Msg::U64ARRAY, @_ ) }
 
 
 sub getField
@@ -289,11 +315,24 @@ sub getU8 { return shift->_getScalar( Tibco::Rv::Msg::U8, @_ ) }
 sub getU16 { return shift->_getScalar( Tibco::Rv::Msg::U16, @_ ) }
 sub getU32 { return shift->_getScalar( Tibco::Rv::Msg::U32, @_ ) }
 sub getU64 { return shift->_getScalar( Tibco::Rv::Msg::U64, @_ ) }
-sub getIPAddr32 { return shift->_getScalar( Tibco::Rv::Msg::IPADDR32, @_ ) }
 sub getIPPort16 { return shift->_getScalar( Tibco::Rv::Msg::IPPORT16, @_ ) }
 sub getString { return shift->_getScalar( Tibco::Rv::Msg::STRING, @_ ) }
 sub getOpaque { return shift->_getScalar( Tibco::Rv::Msg::OPAQUE, @_ ) }
 sub getXml { return shift->_getScalar( Tibco::Rv::Msg::XML, @_ ) }
+
+
+sub getIPAddr32
+{
+   my ( $self, $fieldName, $fieldId ) = @_;
+   my ( $ipaddr32 ) =
+      $self->_getScalar( Tibco::Rv::Msg::IPADDR32, $fieldName, $fieldId );
+   my ( $a, $b, $c, $d );
+   $a = $ipaddr32; $a >>= 24; $ipaddr32 -= $a << 24;
+   $b = $ipaddr32; $b >>= 16; $ipaddr32 -= $b << 16;
+   $c = $ipaddr32; $c >>= 8; $ipaddr32 -= $c << 8;
+   $d = $ipaddr32;
+   return "$a.$b.$c.$d";
+}
 
 
 sub getMsg
@@ -321,6 +360,18 @@ sub getDateTime
    return ( $status == Tibco::Rv::OK )
       ? Tibco::Rv::Msg::DateTime->_adopt( $date ) : undef;
 }
+
+
+sub getF32Array { return shift->_getArray( Tibco::Rv::Msg::F32ARRAY, @_ ) }
+sub getF64Array { return shift->_getArray( Tibco::Rv::Msg::F64ARRAY, @_ ) }
+sub getI8Array { return shift->_getArray( Tibco::Rv::Msg::I8ARRAY, @_ ) }
+sub getI16Array { return shift->_getArray( Tibco::Rv::Msg::I16ARRAY, @_ ) }
+sub getI32Array { return shift->_getArray( Tibco::Rv::Msg::I32ARRAY, @_ ) }
+sub getI64Array { return shift->_getArray( Tibco::Rv::Msg::I64ARRAY, @_ ) }
+sub getU8Array { return shift->_getArray( Tibco::Rv::Msg::U8ARRAY, @_ ) }
+sub getU16Array { return shift->_getArray( Tibco::Rv::Msg::U16ARRAY, @_ ) }
+sub getU32Array { return shift->_getArray( Tibco::Rv::Msg::U32ARRAY, @_ ) }
+sub getU64Array { return shift->_getArray( Tibco::Rv::Msg::U64ARRAY, @_ ) }
 
 
 sub getFieldByIndex
@@ -390,14 +441,21 @@ sub updateU8 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU8Ex', @_ ) }
 sub updateU16 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU16Ex', @_ ) }
 sub updateU32 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU32Ex', @_ ) }
 sub updateU64 { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateU64Ex', @_ ) }
-sub updateIPAddr32
-   { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateIPAddr32Ex', @_ ) }
-sub updateIPPort16
-   { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateIPPort16Ex', @_ ) }
+sub updateIPPort16 { shift->_updScalar( 'Tibco::Rv::Msg_UpdateIPPort16', @_ ) }
 sub updateString
    { shift->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateStringEx', @_ ) }
 sub updateOpaque { shift->_updScalar( 'Tibco::Rv::Msg_UpdateOpaque', @_ ) }
 sub updateXml { shift->_updScalar( 'Tibco::Rv::Msg_UpdateXml', @_ ) }
+
+
+sub updateIPAddr32
+{
+   my ( $self, $fieldName, $ipaddr32, $fieldId ) = @_;
+   my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
+   $ipaddr32 = ( $a << 24 ) + ( $b << 16 ) + ( $c << 8 ) + $d;
+   $self->_updScalar( 'Tibco::Rv::Msg_UpdateIPAddr32',
+      $fieldName, $ipaddr32, $fieldId );
+}
 
 
 sub updateMsg
@@ -414,6 +472,18 @@ sub updateDateTime
    $self->_updScalar( 'Tibco::Rv::tibrvMsg_UpdateDateTimeEx',
       $fieldName, $date->{ptr}, $fieldId );
 }
+
+
+sub updateF32Array { shift->_updArray( Tibco::Rv::Msg::F32ARRAY, @_ ) }
+sub updateF64Array { shift->_updArray( Tibco::Rv::Msg::F64ARRAY, @_ ) }
+sub updateI8Array { shift->_updArray( Tibco::Rv::Msg::I8ARRAY, @_ ) }
+sub updateI16Array { shift->_updArray( Tibco::Rv::Msg::I16ARRAY, @_ ) }
+sub updateI32Array { shift->_updArray( Tibco::Rv::Msg::I32ARRAY, @_ ) }
+sub updateI64Array { shift->_updArray( Tibco::Rv::Msg::I64ARRAY, @_ ) }
+sub updateU8Array { shift->_updArray( Tibco::Rv::Msg::U8ARRAY, @_ ) }
+sub updateU16Array { shift->_updArray( Tibco::Rv::Msg::U16ARRAY, @_ ) }
+sub updateU32Array { shift->_updArray( Tibco::Rv::Msg::U32ARRAY, @_ ) }
+sub updateU64Array { shift->_updArray( Tibco::Rv::Msg::U64ARRAY, @_ ) }
 
 
 sub clearReferences
@@ -458,9 +528,35 @@ sub _updScalar
 {
    my ( $self, $fxn, $fieldName, $value, $fieldId ) = @_;
    $fieldId = 0 unless ( defined $fieldId );
-print "_updScalar $fxn/$fieldName/$value/$fieldId\n";
    my ( $status ) = $fxn->( $self->{id}, $fieldName, $value, $fieldId );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+}
+
+
+sub _getArray
+{
+   my ( $self, $type, $fieldName, $fieldId ) = @_;
+   $fieldId = 0 unless ( defined $fieldId );
+   my ( $elts ) = [ ];
+   my ( $status ) = Tibco::Rv::Msg_GetArray( $self->{id}, $type, $fieldName,
+      $elts, $fieldId );
+   Tibco::Rv::die( $status )
+      unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::NOT_FOUND );
+   return ( $status == Tibco::Rv::OK ) ? $elts : undef;
+}
+
+
+sub _addArray { shift->_addOrUpdArray( Tibco::Rv::TRUE, @_ ) }
+sub _updArray { shift->_addOrUpdArray( Tibco::Rv::FALSE, @_ ) }
+
+
+sub _addOrUpdArray
+{
+   my ( $self, $isAdd, $type, $fieldName, $elts, $fieldId ) = @_;
+   $fieldId = 0 unless ( defined $fieldId );
+   my ( $status ) = Tibco::Rv::Msg_AddOrUpdateArray( $self->{id}, $isAdd,
+      $type, $fieldName, $elts, $fieldId );
+   die Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
 

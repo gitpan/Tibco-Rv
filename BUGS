@@ -1,16 +1,9 @@
-Need better test harness (t/* stuff)
-
-
 Make all constructors and factory methods of the form:
 my ( $foo ) = new Foo ( param1 => 'value', param2 => 'value', ... )
 ... and add in all set parameters, such as name, limitPolicy, etc
 
 
 Gotta do something to abstract out createInbox ...
-
-
-Tibco::Rv::Msg
-Array get/set/update methods not implemented yet
 
 
 Tibco::Rv::Msg::DateTime

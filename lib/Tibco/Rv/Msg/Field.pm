@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -33,7 +33,7 @@ sub new
 sub _new
 {
    my ( $class, $ptr ) = @_;
-   return bless { ptr => $ptr, %defaults }, $class;
+   return bless { ptr => $ptr, %defaults}, $class;
 }
 
 
@@ -58,13 +58,21 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::MsgField__GetValues(
+   Tibco::Rv::MsgField_GetValues(
       @$self{ qw/ ptr name id size count type data / } );
    if ( $self->{type} == Tibco::Rv::Msg::MSG )
    {
       $self->{data} = Tibco::Rv::Msg->_adopt( $self->{data} );
    } elsif ( $self->{type} == Tibco::Rv::Msg::DATETIME ) {
       $self->{data} = Tibco::Rv::Msg::DateTime->_adopt( $self->{data} );
+   } elsif ( $self->{type} == Tibco::Rv::Msg::IPADDR32 ) {
+      my ( $a, $b, $c, $d );
+      my ( $ipaddr32 ) = $self->{data};
+      $a = $ipaddr32; $a >>= 24; $ipaddr32 -= $a << 24;
+      $b = $ipaddr32; $b >>= 16; $ipaddr32 -= $b << 16;
+      $c = $ipaddr32; $c >>= 8; $ipaddr32 -= $c << 8;
+      $d = $ipaddr32;
+      $self->{data} = "$a.$b.$c.$d";
    }
 }
 
@@ -127,9 +135,14 @@ sub u64 { return shift->_eltAccessor( Tibco::Rv::Msg::U64, @_ ) }
 sub f32 { return shift->_eltAccessor( Tibco::Rv::Msg::F32, @_ ) }
 sub f64 { return shift->_eltAccessor( Tibco::Rv::Msg::F64, @_ ) }
 sub ipport16 { return shift->_eltAccessor( Tibco::Rv::Msg::IPPORT16, @_ ) }
-sub ipaddr32 { return shift->_eltAccessor( Tibco::Rv::Msg::IPADDR32, @_ ) }
-# ipaddr32 should accept dotted quad
-# use Socket/inet_aton
+
+
+sub ipaddr32
+{
+   my ( $self ) = shift;
+   return @_ ? $self->_setIPAddr32( @_ )
+      : $self->_get( Tibco::Rv::Msg::IPADDR32, $ipaddr32 );
+}
 
 
 sub date
@@ -139,11 +152,23 @@ sub date
 }
 
 
+sub i8array { return shift->_aryAccessor( Tibco::Rv::Msg::I8ARRAY, @_ ) }
+sub u8array { return shift->_aryAccessor( Tibco::Rv::Msg::U8ARRAY, @_ ) }
+sub i16array { return shift->_aryAccessor( Tibco::Rv::Msg::I16ARRAY, @_ ) }
+sub u16array { return shift->_aryAccessor( Tibco::Rv::Msg::U16ARRAY, @_ ) }
+sub i32array { return shift->_aryAccessor( Tibco::Rv::Msg::I32ARRAY, @_ ) }
+sub u32array { return shift->_aryAccessor( Tibco::Rv::Msg::U32ARRAY, @_ ) }
+sub i64array { return shift->_aryAccessor( Tibco::Rv::Msg::I64ARRAY, @_ ) }
+sub u64array { return shift->_aryAccessor( Tibco::Rv::Msg::U64ARRAY, @_ ) }
+sub f32array { return shift->_aryAccessor( Tibco::Rv::Msg::F32ARRAY, @_ ) }
+sub f64array { return shift->_aryAccessor( Tibco::Rv::Msg::F64ARRAY, @_ ) }
+
+
 sub _bufAccessor
 {
    my ( $self ) = shift;
    my ( $type ) = shift;
-   return @_ ? $self->_setBuf( @_, $type ) : $self->_get( $type );
+   return @_ ? $self->_setBuf( $type, @_ ) : $self->_get( $type );
 }
 
 
@@ -151,7 +176,27 @@ sub _eltAccessor
 {
    my ( $self ) = shift;
    my ( $type ) = shift;
-   return @_ ? $self->_setElt( @_, $type ) : $self->_get( $type );
+   return @_ ? $self->_setElt( $type, @_ ) : $self->_get( $type );
+}
+
+
+sub _aryAccessor
+{
+   my ( $self ) = shift;
+   my ( $type ) = shift;
+   return @_ ? $self->_setAry( $type, @_ ) : $self->_get( $type );
+}
+
+
+sub _setIPAddr32
+{
+   my ( $self, $ipaddr32 ) = @_;
+   @$self{ qw/ data type count / } = ( $ipaddr32, Tibco::Rv::Msg::IPADDR32, 1 );
+   my ( $a, $b, $c, $d ) = split( /\./, $ipaddr32 );
+   $ipaddr32 = $d + ( $c << 8 ) + ( $b << 16 ) + ( $a << 24 );
+   $self->{size} =
+      Tibco::Rv::MsgField_SetElt( @$self{ qw/ ptr type / }, $ipaddr32 );
+   return $self->{data};
 }
 
 
@@ -160,7 +205,7 @@ sub _setDate
    my ( $self, $date ) = @_;
    @$self{ qw/ data type count / } = ( $date, Tibco::Rv::Msg::DATETIME, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField__SetDateTime( $self->{ptr}, $self->{data}{ptr} );
+      Tibco::Rv::MsgField_SetDateTime( $self->{ptr}, $self->{data}{ptr} );
    return $self->{data};
 }
 
@@ -185,11 +230,11 @@ sub _setMsg
 
 sub _setBuf
 {
-   my ( $self, $buf, $type ) = @_;
+   my ( $self, $type, $buf ) = @_;
    @$self{ qw/ data type count / } = ( $buf, $type, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField__SetBuf( $self->{ptr}, $self->{data}, $type );
-   $self->{data} = substr( $self->{data}, 0, $self->{size} )
+      Tibco::Rv::MsgField_SetBuf( $self->{ptr}, $type, $self->{data} );
+   $self->{data} = substr( $self->{data}, 0, $self->{size} - 1 )
       if ( $type == Tibco::Rv::Msg::STRING );
    return $self->{data};
 }
@@ -197,10 +242,21 @@ sub _setBuf
 
 sub _setElt
 {
-   my ( $self, $elt, $type ) = @_;
+   my ( $self, $type, $elt ) = @_;
    @$self{ qw/ data type count / } = ( $elt, $type, 1 );
    $self->{size} =
-      Tibco::Rv::MsgField__SetElt( @$self{ qw/ ptr data type / } );
+      Tibco::Rv::MsgField_SetElt( @$self{ qw/ ptr type data / } );
+   return $self->{data};
+}
+
+
+sub _setAry
+{
+   my ( $self, $type, $ary ) = @_;
+   $ary = [ ] unless ( ref( $ary ) eq 'ARRAY' );
+   @$self{ qw/ data type count / } = ( $ary, $type, $#$ary + 1 );
+   $self->{size} =
+      Tibco::Rv::MsgField_SetAry( @$self{ qw/ ptr type data / } );
    return $self->{data};
 }
 

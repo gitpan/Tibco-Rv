@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::DateTime;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.90';
+$VERSION = '0.99';
 
 
 my ( %defaults );
@@ -56,7 +56,7 @@ sub _adopt
 sub _getValues
 {
    my ( $self ) = @_;
-   Tibco::Rv::MsgDateTime__GetValues( @$self{ qw/ ptr sec nsec / } );
+   Tibco::Rv::MsgDateTime_GetValues( @$self{ qw/ ptr sec nsec / } );
 }
 
 

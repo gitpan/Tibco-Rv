@@ -15,3 +15,8 @@ Revision history for Perl extension Tibco::Rv.
 
 0.90  Wed Jan 22 01:24:16 CST 2003
 	- implemented functions to manipulate tibrvMsg fields, except arrays
+
+0.99  Sat Jan 25 00:17:48 CST 2003
+	- tibrv API complete, except for a few minor exceptions listed in BUGS
+	- better handling of IPAddr32/IPPort16
+	- much better testing setup (t/*.t)
