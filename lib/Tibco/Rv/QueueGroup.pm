@@ -2,7 +2,7 @@ package Tibco::Rv::QueueGroup;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 use Tibco::Rv::Queue;
@@ -23,15 +23,15 @@ sub new
 
 sub createDispatcher
 {
-   my ( $self, $idleTimeout ) = @_;
-   return new Tibco::Rv::Dispatcher( $self, $idleTimeout );
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::Dispatcher( dispatchable => $self, %args );
 }
 
 
 sub createQueue
 {
-   my ( $self, @args ) = @_;
-   my ( $queue ) = new Tibco::Rv::Queue( @args );
+   my ( $self, %args ) = @_;
+   my ( $queue ) = new Tibco::Rv::Queue( %args );
    $self->add( $queue );
    return $queue;
 }
@@ -76,7 +76,7 @@ sub timedDispatch
       Tibco::Rv::tibrvQueueGroup_TimedDispatch( $self->{id}, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
-   return new Tibco::Rv::Status( $status );
+   return new Tibco::Rv::Status( status => $status );
 }
 
 
@@ -92,3 +92,24 @@ sub DESTROY
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::QueueGroup - Tibco Queue Group, queue managing object
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 CONSTRUCTOR
+
+=head1 METHODS
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

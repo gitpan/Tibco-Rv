@@ -20,3 +20,10 @@ Revision history for Perl extension Tibco::Rv.
 	- tibrv API complete, except for a few minor exceptions listed in BUGS
 	- better handling of IPAddr32/IPPort16
 	- much better testing setup (t/*.t)
+
+1.00  Wed Jan 29 22:11:03 CST 2003
+	- tibrv API really complete now, including my embellishments
+	- Tibco::Rv API frozen
+	- misc. bug fixes
+	- documentation ~ 20% done
+	- test harness ~ 50% done

@@ -2,7 +2,7 @@ package Tibco::Rv::Transport;
 
 
 use vars qw/ $VERSION $PROCESS /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 use constant PROCESS_TRANSPORT => 10;
@@ -21,17 +21,24 @@ BEGIN
 
 sub new
 {
-   my ( $proto, $service, $network, $daemon ) = @_;
+   my ( $proto ) = shift;
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $defaults{$_} ) } keys %args;
+   my ( %params ) = ( %defaults, %args );
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   $self->{service} = $service if ( defined $service );
-   $self->{network} = $network if ( defined $network );
-   $self->{daemon} = $daemon if ( defined $daemon );
+   @$self{ qw/ service network daemon / } =
+      @params{ qw/ service network daemon / };
 
-   my ( $status ) = Tibco::Rv::Transport_Create( $self->{id},
-      $self->{service}, $self->{network}, $self->{daemon} );
+   my ( $status ) =
+      Tibco::Rv::Transport_Create( @$self{ qw/ id service network daemon / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+
+   $self->batchMode( $params{batchMode} )
+      if ( $params{batchMode} != DEFAULT_BATCH );
+   $self->description( $params{description} ) if ( $params{description} ne '' );
 
    return $self;
 }
@@ -152,3 +159,28 @@ BEGIN { $PROCESS = Tibco::Rv::Transport->_adopt( PROCESS_TRANSPORT ) }
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::Transport - Tibco network transport object
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 CONSTRUCTOR
+
+=head1 METHODS
+
+=head1 SEE ALSO
+
+L<Tibco::Rv::Msg>
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

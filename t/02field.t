@@ -21,10 +21,9 @@ my ( $field ) = $msg->createField;
 eval { $field->i8 };
 ( $@ == Tibco::Rv::ARG_CONFLICT ) ? &ok : &nok;
 
-my ( $date ) = $msg->createDateTime;
-$date->now;
+my ( $date ) = Tibco::Rv::Msg::DateTime->now;
 my ( $now ) = time;
-( $date - $now < 10 ) ? &ok : &nok;
+( abs( $date - $now ) < 10 ) ? &ok : &nok;
 
 ( $field->str( 'abcabc' ) && $field->str eq 'abcabc' ) ? &ok : &nok;
 ( $field->xml( '<abcabc/>' ) && $field->xml eq '<abcabc/>' ) ? &ok : &nok;

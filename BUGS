@@ -1,6 +1,16 @@
-Make all constructors and factory methods of the form:
-my ( $foo ) = new Foo ( param1 => 'value', param2 => 'value', ... )
-... and add in all set parameters, such as name, limitPolicy, etc
+Certified Messaging unimplemented
+
+
+Fault Tolerance unimplemented
+
+
+Distributed Queuing unimplemented
+
+
+Virtual Circuits unimplemented
+
+
+Secure Daemon connections unimplemented
 
 
 Gotta do something to abstract out createInbox ...
@@ -25,7 +35,7 @@ tibrvQueue_DestroyEx -- I wonder why?).  Since Perl callbacks are stored
 internally in the closure data, Tibco::Rv does not support the
 tibrvEvent_DestroyEx callback.  It could be hacked in by storing the DESTROY
 callback along with the onEvent callback in a hash or something, and passing
-both callbacks into the constructor.
+both callbacks into the Perl constructor.
 
 
 tibrvMsg_SetHandlers
@@ -33,6 +43,4 @@ Not supported.  I'm sure no one wants this stuff, anyway.
 
 
 tibrv 6.x support
-Not tried.  Maybe it'll work, maybe it won't.  I'm sure there'll have to be
-some special code to disable the secure daemon and virutal circuit code when
-running under tibrv 6.x.
+Not tried.  Maybe it'll work, maybe it won't.

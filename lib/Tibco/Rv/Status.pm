@@ -2,7 +2,7 @@ package Tibco::Rv::Status;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;
@@ -10,9 +10,14 @@ use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;
 
 sub new
 {
-   my ( $proto, $status ) = @_;
+   my ( $proto ) = shift;
+   my ( %params ) = ( status => Tibco::Rv::OK );
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $params{$_} ) } keys %args;
+   %params  = ( %params, %args );
    my ( $class ) = ref( $proto ) || $proto;
-   my ( $self ) = bless { status => $status }, $class;
+   my ( $self ) = bless { status => $params{status} }, $class;
    return $self;
 }
 
@@ -22,3 +27,56 @@ sub toNum { return shift->{status} }
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::Status - status code
+
+=head1 SYNOPSIS
+
+   my ( $status ) =
+      new Tibco::Rv::Status( status => Tibco::Rv::INVALID_ARG );
+
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+
+=head1 DESCRIPTION
+
+Wrapper class for status codes.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item $status = new Tibco::Rv::Status( %args )
+
+   %args
+      status => $status
+
+Creates a C<Tibco::Rv::Status> object with the given status.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item $num = $status->toNum (or 0+$status)
+
+Returns the numeric value of C<$status>.  Or, simply use C<$status> in a
+numeric context.
+
+=item $str = $status->toString (or "$status")
+
+Returns a descriptive string of C<$status>.  Or, simply use C<$status> in
+a string context.
+
+=back
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -18,11 +18,18 @@ BEGIN
 
 sub new
 {
-   my ( $proto ) = @_;
+   my ( $proto ) = shift;
+   my ( %params ) = ( name => undef, id => 0 );
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $params{$_} ) } keys %args;
+   %params = ( %params, %args );
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   my ( $status ) = Tibco::Rv::MsgField_Create( $self->{ptr} );
+   @$self{ qw/ name id / } = @params{ qw/ name id / };
+
+   my ( $status ) = Tibco::Rv::MsgField_Create( @$self{ qw/ ptr name id / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    $self->bool( Tibco::Rv::FALSE );
 
@@ -33,7 +40,7 @@ sub new
 sub _new
 {
    my ( $class, $ptr ) = @_;
-   return bless { ptr => $ptr, %defaults}, $class;
+   return bless { ptr => $ptr, %defaults }, $class;
 }
 
 
@@ -273,3 +280,83 @@ sub DESTROY
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::Msg::Field - Manipulate a Tibco message field
+
+=head1 SYNOPSIS
+
+   my ( $field ) = $msg->createField( name => 'myField' );
+   $field->i8( 123 );
+   $field->opaque( "abc\0abc" );
+   $field->ipaddr32( '66.35.250.150' );
+   $field->u64array( [ 1, 123, 3030 ] );
+   print "U64Array\n" if ( $field->type == Tibco::Rv::Msg::U64ARRAY );
+   print "Count: ", $field->count, "; size: ", $field->size, "\n";
+
+=head1 DESCRIPTION
+
+Message Field-manipulating class.  Holds a single value, like a C enum,
+along with a name and an id.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item $field = new Tibco::Rv::Msg::Field( %args )
+
+   %args:
+      name => $name,
+      id => $id
+
+Creates a C<Tibco::Rv::Msg::Field>, with name and id as given in %args
+(name defaults to C<undef> and id defaults to 0, if not specified).
+C<$field> is initialized with boolean value C<Tibco::Rv::FALSE>.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item $name = $field->name
+
+=item $field->name( $name )
+
+=item $id = $field->id
+
+=item $field->id( $id )
+
+=item $count = $field->count
+
+=item $size = $field->size
+
+=item $type = $field->type
+
+=item $value = $field-><type>
+
+=item $field-><type>( $value )
+
+   <type> can be:
+      bool, str, opaque, xml,
+      f32, f64, i8, i16, i32, i64, u8, u16, u32, u64,
+      ipaddr32, ipport16, date, or msg
+
+=item $valueAryRef = $field-><type>array
+
+=item $field-><type>array( [ $val1, $val2, ... ] )
+
+   <type> can be:
+      f32, f64, i8, i16, i32, i64, u8, u16, u32, u64
+
+=back
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

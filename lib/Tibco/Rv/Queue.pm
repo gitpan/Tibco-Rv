@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -33,12 +33,23 @@ BEGIN
 
 sub new
 {
-   my ( $proto ) = @_;
+   my ( $proto ) = shift;
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $defaults{$_} ) } keys %args;
+   my ( %params ) = ( %defaults, %args );
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
    my ( $status ) = Tibco::Rv::Queue_Create( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+
+   $self->limitPolicy( @params{ qw/ policy maxEvents discardAmount / } )
+      if ( $params{policy} != DISCARD_NONE or $params{maxEvents} != 0
+         or $params{discardAmount} != 0 );
+   $self->name( $params{name} ) if ( $params{name} ne 'tibrvQueue' );
+   $self->priority( $params{priority} ) if ( $params{priority} != 1 );
+   $self->hook( $params{hook} ) if ( defined $params{hook} );
 
    return $self;
 }
@@ -65,29 +76,29 @@ sub _adopt
 
 sub createListener
 {
-   my ( $self, $transport, $subject, $callback ) = @_;
-   return new Tibco::Rv::Listener( $self, $transport, $subject, $callback );
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::Listener( queue => $self, %args );
 }
 
 
 sub createTimer
 {
-   my ( $self, $interval, $callback ) = @_;
-   return new Tibco::Rv::Timer( $self, $interval, $callback );
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::Timer( queue => $self, %args );
 }
 
 
 sub createIO
 {
-   my ( $self, $socketId, $ioType, $callback ) = @_;
-   return new Tibco::Rv::IO( $self, $socketId, $ioType, $callback );
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::IO( queue => $self, %args );
 }
 
 
 sub createDispatcher
 {
-   my ( $self, $idleTimeout ) = @_;
-   return new Tibco::Rv::Dispatcher( $self, $idleTimeout );
+   my ( $self, %args ) = @_;
+   return new Tibco::Rv::Dispatcher( dispatchable => $self, %args );
 }
 
 
@@ -112,7 +123,7 @@ sub timedDispatch
       Tibco::Rv::tibrvQueue_TimedDispatch( $self->{id}, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
-   return new Tibco::Rv::Status( $status );
+   return new Tibco::Rv::Status( status => $status );
 }
 
 
@@ -208,3 +219,24 @@ BEGIN { $DEFAULT = Tibco::Rv::Queue->_adopt( DEFAULT_QUEUE ) }
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::Queue - Tibco Queue event-managing object
+
+=head1 SYNOPSIS
+
+=head1 DESCRIPTION
+
+=head1 CONSTRUCTOR
+
+=head1 METHODS
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

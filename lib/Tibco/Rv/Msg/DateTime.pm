@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::DateTime;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '0.99';
+$VERSION = '1.00';
 
 
 my ( %defaults );
@@ -17,15 +17,25 @@ use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;
 
 sub new
 {
-   my ( $proto ) = @_;
+   my ( $proto ) = shift;
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $defaults{$_} ) } keys %args;
+   my ( %params ) = ( %defaults, %args );
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   my ( $status ) = Tibco::Rv::MsgDateTime_Create( $self->{ptr}, 0, 0 );
+   @$self{ qw/ sec nsec / } = @params{ qw/ sec nsec / };
+
+   my ( $status ) =
+      Tibco::Rv::MsgDateTime_Create( @$self{ qw/ ptr sec nsec / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
    return $self;
 }
+
+
+sub now { return shift->new( sec => time ) }
 
 
 sub _new
@@ -57,14 +67,6 @@ sub _getValues
 {
    my ( $self ) = @_;
    Tibco::Rv::MsgDateTime_GetValues( @$self{ qw/ ptr sec nsec / } );
-}
-
-
-sub now
-{
-   my ( $self ) = @_;
-   $self->sec( time );
-   $self->nsec( 0 );
 }
 
 
@@ -114,3 +116,67 @@ sub DESTROY
 
 
 1;
+
+
+=pod
+
+=head1 NAME
+
+Tibco::Rv::Msg::DateTime - Tibco DateTime datatype
+
+=head1 SYNOPSIS
+
+my ( $date ) = $msg->createDateTime;
+my ( $now ) = Tibco::Rv::Msg::DateTime->now;
+$msg->addDateTime( now => $now );
+print "time: $now\n";
+
+=head1 DESCRIPTION
+
+DateTime-manipulating class.  Holds seconds since the epoch plus some
+nanoseconds.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item $date = new Tibco::Rv::Msg::DateTime( %args )
+
+   %args:
+      sec => $seconds,
+      nsec => $nanoseconds
+
+Creates a C<Tibco::Rv::Msg::DateTime>, with C<$seconds> since the epoch
+(defaults to 0 if unspecified), and C<$nanoseconds> before or after that
+time (defaults to 0 if unspecified).
+
+=item $now = Tibco::Rv::Msg::DateTime->now
+
+Creates a C<Tibco::Rv::Msg::DateTime> with seconds specifying the current
+time.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item $sec = $date->sec
+
+=item $date->sec( $sec )
+
+=item $nsec = $date->nsec
+
+=item $date->nsec( $nsec )
+
+=item $date->toNum (or 0+$date)
+
+=item $date->toString (or "$date")
+
+=back
+
+=head1 AUTHOR
+
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
+
+=cut

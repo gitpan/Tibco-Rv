@@ -5,7 +5,7 @@ use vars qw/ $VERSION /;
 
 BEGIN
 {
-   $VERSION = '0.99';
+   $VERSION = '1.00';
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
 TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
@@ -108,10 +108,6 @@ use constant SUBJECT_TOKEN_MAX => 127;
 use constant FALSE => 0;
 use constant TRUE => 1;
 
-use constant TIMER_EVENT => 1;
-use constant IO_EVENT => 2;
-use constant LISTEN_EVENT => 3;
-
 use constant WAIT_FOREVER => -1.0;
 use constant NO_WAIT => 0.0;
 
@@ -124,7 +120,7 @@ use Tibco::Rv::QueueGroup;
 sub die
 {
    my ( $status ) = @_;
-   $status = new Tibco::Rv::Status( $status )
+   $status = new Tibco::Rv::Status( status => $status )
       unless ( UNIVERSAL::isa( $status, 'Tibco::Rv::Status' ) );
    local( $Carp::CarpLevel ) = 1;
    croak 0+$status . ": $status\n";
@@ -137,25 +133,23 @@ sub version
 }
 
 
-my ( %defaults );
-BEGIN
-{
-   %defaults = ( stop => 1, processTransport => $Tibco::Rv::Transport::PROCESS,
-      transport => undef, queue => $Tibco::Rv::Queue::DEFAULT,
-      queueGroup => undef );
-}
-
-
 sub new
 {
-   my ( $proto, $service, $network, $daemon ) = @_;
+   my ( $proto ) = shift;
+   my ( %params ) =
+      ( service => undef, network => undef, daemon => 'tcp:7500' );
+   my ( %args ) = @_;
+   map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
+      unless ( exists $params{$_} ) } keys %args;
+   %params = ( %params, %args );
    my ( $class ) = ref( $proto ) || $proto;
-   my ( $self ) = bless { %defaults }, $class;
+   my ( $self ) = bless { processTransport => $Tibco::Rv::Transport::PROCESS,
+      queue => $Tibco::Rv::Queue::DEFAULT, stop => 1, created => 1 }, $class;
 
    my ( $status ) = tibrv_Open( );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
-   $self->{transport} = $self->createTransport( $service, $network, $daemon );
+   $self->{transport} = $self->createTransport( %params );
    $self->{queueGroup} = new Tibco::Rv::QueueGroup;
    $self->{queueGroup}->add( $self->{queue} );
 
@@ -164,7 +158,7 @@ sub new
 
 
 sub processTransport { return shift->{processTransport} }
-sub defaultTransport { return shift->{transport} }
+sub transport { return shift->{transport} }
 sub defaultQueue { return shift->{queue} }
 sub defaultQueueGroup { return shift->{queueGroup} }
 
@@ -200,9 +194,9 @@ sub createIO { return shift->{queue}->createIO( @_ ) }
 
 sub createListener
 {
-   my ( $self, $subject, $callback ) = @_;
+   my ( $self, %args ) = @_;
    return
-      $self->{queue}->createListener( $self->{transport}, $subject, $callback );
+      $self->{queue}->createListener( transport => $self->{transport}, %args );
 }
 
 
@@ -215,8 +209,10 @@ sub createInbox { shift->{transport}->createInbox( @_ ) }
 sub DESTROY
 {
    my ( $self ) = @_;
+   return unless ( exists $self->{created} );
 
    my ( $status ) = tibrv_Close( );
+   delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -234,42 +230,410 @@ Tibco::Rv - Perl bindings and Object-Oriented library for TIBCO's TIB/Rendezvous
 
 =head1 SYNOPSIS
 
-	use Tibco::Rv;
+   use Tibco::Rv;
 
-	my ( $rv ) = new Tibco::Rv;
+   my ( $rv ) = new Tibco::Rv;
 
-	my ( $listener ) =
-	   $rv->createListener( $rv->defaultTransport, 'ABC', sub
-	{
-	   my ( $msg ) = @_;
-	   print "Listener got a message: $msg\n";
-	} );
+   my ( $listener ) =
+      $rv->createListener( subject => 'ABC', callback => sub
+   {
+      my ( $msg ) = @_;
+      print "Listener got a message: $msg\n";
+   } );
 
-	my ( $timer ) = $rv->createTimer( 2, sub
-	{
-	   my ( $msg ) = $rv->createMsg;
-	   $msg->addString( field1 => 'myvalue' );
-	   $msg->addString( field2 => 'myothervalue' );
-	   $msg->sendSubject( 'ABC' );
-	   print "Timer kicking out a message: $msg\n";
-	   $rv->defaultTransport->send( $msg );
-	} );
+   my ( $timer ) = $rv->createTimer( timeout => 2, callback => sub
+   {
+      my ( $msg ) = $rv->createMsg;
+      $msg->addString( field1 => 'myvalue' );
+      $msg->addString( field2 => 'myothervalue' );
+      $msg->sendSubject( 'ABC' );
+      print "Timer kicking out a message: $msg\n";
+      $rv->send( $msg );
+   } );
 
-	my ( $killTimer ) = $rv->createTimer( 7, sub { $rv->stop } );
+   my ( $killTimer ) =
+      $rv->createTimer( timeout => 7, callback => sub { $rv->stop } );
 
-	$rv->start;
-	print "finished\n"
+   $rv->start;
+   print "finished\n"
 
 =head1 DESCRIPTION
 
+C<Tibco::Rv> provides bindings and Object-Oriented classes for TIBCO's
+TIB/Rendezvous message passing C API.
+
+All methods die with a L<Tibco::Rv::Status|Tibco::Rv::Status> message if
+there are any TIB/Rendezvous errors.
+
+=head1 CONSTRUCTOR
+
+=over 4
+
+=item $rv = new Tibco::Rv( %args )
+
+   %args:
+      service => $service,
+      network => $network,
+      daemon => $daemon
+
+Creates a C<Tibco::Rv>, which is the top-level object that manages all your
+TIB/Rendezvous needs.  There should only ever be one of these created.
+Calling this method does the following: opens up the internal Rendezvous
+machinery; creates objects for the Intra-Process Transport and the Default
+Queue; creates a default QueueGroup and adds the Default Queue to it; and,
+creates the Default Transport using the supplied service/network/daemon
+arguments.  Supply C<undef> (or supply nothing) as the arguments to create a
+Default Transport connection to a Rendezvous daemon running under the default
+service/network/daemon settings.
+
+See L<Tibco::Rv::Transport> for information on the Intra-Process Transport.
+
+See L<Tibco::Rv::Queue> for information on the Default Queue.
+
+See L<Tibco::Rv::QueueGroup> for information on QueueGroups.
+
+See your TIB/Rendezvous documentation for information on
+service/network/daemon arguments and connecting to Rendezvous daemons, and
+all other TIB/Rendezvous concepts.
+
+=back
+
+=head1 METHODS
+
+=over 4
+
+=item Tibco::Rv::die( $status )
+
+Dies (raises an exception) with the given C<$status>.  C<$status> can either
+be a L<Status|Tibco::Rv::Status> object, or one of the
+L<Status Constants|"STATUS CONSTANTS"> (below).  The exception is of the form:
+
+   %d: %s
+
+... where '%d' is the status number, and '%s' is a description of the error.
+
+All Tibco::Rv methods use this method to raise an exception when they
+encounter a TIB/Rendezvous error.  Use an C<eval { .. }; if ( $@ )> block
+around all Tibco::Rv code if you care about that sort of thing.
+
+=item $ver = Tibco::Rv->version (or $ver = $rv->version)
+
+Returns a string of the form:
+
+   tibrv x.x.xx; Tibco::Rv y.yy
+
+where x.x.xx is the version of TIB/Rendezvous being used, and y.yy is the
+version of this module being used.
+
+=item $transport = $rv->processTransport
+
+Returns the Intra-Process Transport.
+
+=item $transport = $rv->transport
+
+Returns the Default Transport.
+
+=item $queue = $rv->defaultQueue
+
+Returns the Default Queue.
+
+=item $queueGroup = $rv->defaultQueueGroup
+
+Returns the Default QueueGroup.  The Default QueueGroup originally contains
+only the Default Queue.
+
+=item $rv->start
+
+Begin processing events on the Default QueueGroup.  This call remains in
+its own process loop until C<stop> is called.  Also, this call sets
+up a signal handler for TERM and KILL signals, which calls C<stop>
+when either of those signals are received.  It may also be useful to
+create a Listener which listens to a special subject, which, when triggered,
+calls C<stop>.
+
+=item $rv->stop
+
+Stops the process loop started by C<start>.  If the process loop is not
+happening, this call does nothing.
+
+=item $msg = $rv->createMsg
+
+Returns a new L<Msg|Tibco::Rv::Msg> object.
+
+=item $queueGroup = $rv->createQueueGroup
+
+Returns a new L<QueueGroup|Tibco::Rv::QueueGroup> object.
+
+=item $transport = $rv->createTransport( %args )
+
+   %args:
+      service => $service,
+      network => $network,
+      daemon => $daemon
+
+Returns a new L<Transport|Tibco::Rv::Transport> object, using the given
+service/network/daemon arguments.  These arguments can be C<undef> or
+not specified to use the default arguments.
+
+=item $dispatcher = $rv->createDispatcher( %args )
+
+   %args:
+      idleTimeout => $idleTimeout
+
+Returns a new L<Dispatcher|Tibco::Rv::Dispatcher> object to dispatch on the
+Default QueueGroup, with the given idleTimeout argument (idleTimeout
+defaults to C<Tibco::Rv::WAIT_FOREVER> if it is C<undef> or not specified).
+
+=item $queue = $rv->createQueue
+
+Returns a new L<Queue|Tibco::Rv::Queue> object, added to the Default
+QueueGroup.
+
+=item $rv->add( $queue )
+
+Add C<$queue> to the Default QueueGroup.
+
+=item $rv->remove( $queue )
+
+Remove C<$queue> from the Default QueueGroup.
+
+=item $timer = $rv->createTimer( %args )
+
+   %args:
+      interval => $interval,
+      callback => sub { ... }
+
+Returns a new L<Timer|Tibco::Rv::Timer> object with the Default Queue and
+given interval, callback arguments.
+
+=item $io = $rv->createIO( %args )
+
+   %args:
+      socketId => $socketId,
+      ioType => $ioType,
+      callback => sub { ... }
+
+Returns a new L<IO|Tibco::Rv::IO> object with the Default Queue and
+given socketId, ioType, callback arguments.
+
+=item $listener = $rv->createListener( %args )
+
+   %args:
+      subject => $subject,
+      callback => sub { ... }
+
+Returns a new L<Listener|Tibco::Rv::Listener> object with the Default Queue,
+the Default Transport, and the given subject, callback arguments.
+
+=item $rv->send( $msg )
+
+Sends C<$msg> via the Default Transport.
+
+=item $rv->sendReply( $reply, $request )
+
+Sends the given C<$reply> message in response to the given C<$request> message
+via the Default Transport.
+
+=item $reply = $rv->sendRequest( $request, $timeout )
+
+Sends the given C<$request> message via the Default Transport, using the
+given C<$timeout>.  C<$timeout> defaults to Tibco::Rv::WAIT_FOREVER if given
+as C<undef> or not specified.  Returns the C<$reply> message, or C<undef>
+if the timeout is reached before receiving a reply.
+
+=item $inbox = $rv->createInbox
+
+Returns a new C<$inbox> subject.
+
+=item $rv->DESTROY
+
+Closes the TIB/Rendezvous machinery.  DESTROY is called automatically when
+C<$rv> goes out of scope, but you may also call it explicitly.  All Tibco
+objects that you have created are invalidated (except for Tibco::Rv::Msg
+objects).  Nothing will happen if DESTROY is called on an already-destroyed
+C<$rv>.
+
+=back
+
+=head1 STATUS CONSTANTS
+
+=over 4
+
+=item Tibco::Rv::OK => 0
+
+=item Tibco::Rv::INIT_FAILURE => 1
+
+=item Tibco::Rv::INVALID_TRANSPORT => 2
+
+=item Tibco::Rv::INVALID_ARG => 3
+
+=item Tibco::Rv::NOT_INITIALIZED => 4
+
+=item Tibco::Rv::ARG_CONFLICT => 5
+
+=item Tibco::Rv::SERVICE_NOT_FOUND => 16
+
+=item Tibco::Rv::NETWORK_NOT_FOUND => 17
+
+=item Tibco::Rv::DAEMON_NOT_FOUND => 18
+
+=item Tibco::Rv::NO_MEMORY => 19
+
+=item Tibco::Rv::INVALID_SUBJECT => 20
+
+=item Tibco::Rv::DAEMON_NOT_CONNECTED => 21
+
+=item Tibco::Rv::VERSION_MISMATCH => 22
+
+=item Tibco::Rv::SUBJECT_COLLISION => 23
+
+=item Tibco::Rv::VC_NOT_CONNECTED => 24
+
+=item Tibco::Rv::NOT_PERMITTED => 27
+
+=item Tibco::Rv::INVALID_NAME => 30
+
+=item Tibco::Rv::INVALID_TYPE => 31
+
+=item Tibco::Rv::INVALID_SIZE => 32
+
+=item Tibco::Rv::INVALID_COUNT => 33
+
+=item Tibco::Rv::NOT_FOUND => 35
+
+=item Tibco::Rv::ID_IN_USE => 36
+
+=item Tibco::Rv::ID_CONFLICT => 37
+
+=item Tibco::Rv::CONVERSION_FAILED => 38
+
+=item Tibco::Rv::RESERVED_HANDLER => 39
+
+=item Tibco::Rv::ENCODER_FAILED => 40
+
+=item Tibco::Rv::DECODER_FAILED => 41
+
+=item Tibco::Rv::INVALID_MSG => 42
+
+=item Tibco::Rv::INVALID_FIELD => 43
+
+=item Tibco::Rv::INVALID_INSTANCE => 44
+
+=item Tibco::Rv::CORRUPT_MSG => 45
+
+=item Tibco::Rv::TIMEOUT => 50
+
+=item Tibco::Rv::INTR => 51
+
+=item Tibco::Rv::INVALID_DISPATCHABLE => 52
+
+=item Tibco::Rv::INVALID_DISPATCHER => 53
+
+=item Tibco::Rv::INVALID_EVENT => 60
+
+=item Tibco::Rv::INVALID_CALLBACK => 61
+
+=item Tibco::Rv::INVALID_QUEUE => 62
+
+=item Tibco::Rv::INVALID_QUEUE_GROUP => 63
+
+=item Tibco::Rv::INVALID_TIME_INTERVAL => 64
+
+=item Tibco::Rv::INVALID_IO_SOURCE => 65
+
+=item Tibco::Rv::INVALID_IO_CONDITION => 66
+
+=item Tibco::Rv::SOCKET_LIMIT => 67
+
+=item Tibco::Rv::OS_ERROR => 68
+
+=item Tibco::Rv::INSUFFICIENT_BUFFER => 70
+
+=item Tibco::Rv::EOF => 71
+
+=item Tibco::Rv::INVALID_FILE => 72
+
+=item Tibco::Rv::FILE_NOT_FOUND => 73
+
+=item Tibco::Rv::IO_FAILED => 74
+
+=item Tibco::Rv::NOT_FILE_OWNER => 80
+
+=item Tibco::Rv::TOO_MANY_NEIGHBORS => 90
+
+=item Tibco::Rv::ALREADY_EXISTS => 91
+
+=item Tibco::Rv::PORT_BUSY => 100
+
+=back
+
+=head1 OTHER CONSTANTS
+
+=over 4
+
+=item Tibco::Rv::SUBJECT_MAX => 255
+
+Maximum length of a subject
+
+=item Tibco::Rv::SUBJECT_TOKEN_MAX => 127
+
+Maximum number of tokens a subject can contain
+
+=item Tibco::Rv::FALSE => 0
+
+Boolean true
+
+=item Tibco::Rv::TRUE => 1
+
+Boolean false
+
+=item Tibco::Rv::WAIT_FOREVER => -1.0
+
+Blocking wait on event dispatch calls (waits until an event occurs)
+
+=item Tibco::Rv::NO_WAIT => 0.0
+
+Non-blocking wait on event dispatch calls (returns immediately)
+
+=back
+
+=head1 SEE ALSO
+
+=over 4
+
+=item L<Tibco::Rv::Status>
+
+=item L<Tibco::Rv::Event>
+
+=item L<Tibco::Rv::QueueGroup>
+
+=item L<Tibco::Rv::Queue>
+
+=item L<Tibco::Rv::Dispatcher>
+
+=item L<Tibco::Rv::Transport>
+
+=back
 
 =head1 AUTHOR
 
-Paul Sturm, sturm@branewave.com
+Paul Sturm E<lt>I<sturm@branewave.com>E<gt>
 
+=head1 COPYRIGHT
+
+Copyright (c) 2003 Paul Sturm.  All rights reserved.  This program is free
+software; you can redistribute it and/or modify it under the same terms
+as Perl itself.
+
+Tibco::Rv will not operate without TIB/Rendezvous, which is not included
+in this distribution.  You must obtain TIB/Rendezvous (and a license to use
+it) from TIBCO, Inc. (http://www.tibco.com).
+
+TIBCO and TIB/Rendezvous are trademarks of TIBCO, Inc.
 
 TIB/Rendezvous copyright notice:
 
+C<
 /*
  * Copyright (c) 1998-2000 TIBCO Software Inc.
  * All rights reserved.
@@ -279,11 +643,7 @@ TIB/Rendezvous copyright notice:
  *
  * @(#)tibrv.h  2.9
  */
-
-
-=head1 SEE ALSO
-
-http://www.tibco.com
+>
 
 =cut
 
@@ -900,13 +1260,13 @@ void MsgField_SetName( tibrvMsgField * field, const char * name );
 void MsgField_SetId( tibrvMsgField * field, tibrv_u16 id );
 
 
-tibrv_status MsgField_Create( SV * sv_field )
+tibrv_status MsgField_Create( SV * sv_field, const char * name, tibrv_u16 id )
 {
    tibrvMsgField * field = (tibrvMsgField *)malloc( sizeof( tibrvMsgField ) );
    if ( field == NULL ) return TIBRV_NO_MEMORY;
 
-   MsgField_SetName( field, NULL );
-   MsgField_SetId( field, 0 );
+   field->name = name;
+   field->id = id;
 
    sv_setiv( sv_field, (IV)field );
    return TIBRV_OK;
@@ -1359,7 +1719,7 @@ static void onEventDestroy( tibrvEvent event, void * closure )
 
 /* no closure data here -- it gets closure data from constructor
  * so to support this, we'd have to store both callbacks in the closure
- * and have a "completionCallback" parameter in constructor
+ * and have a "completionCallback" argument in constructor
  */
 tibrv_status Event_DestroyEx( tibrvEvent event )
 {

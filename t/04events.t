@@ -13,25 +13,28 @@ pipe( *IN, *OUT );
 
 my ( $io, $timer, $listener );
 my ( $io_ok, $timer_ok, $listener_ok ) = ( 0, 0, 0 );
-$io = $rv->createIO( fileno( IN ), Tibco::Rv::IO::READ, sub {
+$io = $rv->createIO( socketId => fileno( IN ),
+   ioType => Tibco::Rv::IO::READ, callback => sub {
    my ( $x );
    $x = <IN>;
    $io_ok = 1  if ( $x eq "abc\n" );
    $io->DESTROY;
 } );
-$timer = $rv->createTimer( 1, sub {
+$timer = $rv->createTimer( interval => 1, callback => sub {
    $timer_ok = 1;
    my ( $msg ) = $rv->createMsg;
    $msg->sendSubject( 'PERL.TIBCO.RV.TEST' );
    $rv->send( $msg );
    $timer->DESTROY;
 } );
-$listener = $rv->createListener( 'PERL.TIBCO.RV.TEST', sub {
+$listener =
+   $rv->createListener( subject => 'PERL.TIBCO.RV.TEST', callback => sub
+{
    $listener_ok = 1;
    print OUT "abc\n";
    close( OUT );
 } );
-$rv->createTimer( 3, sub { $rv->stop } );
+$rv->createTimer( interval => 3, callback => sub { $rv->stop } );
 
 
 $rv->start;
