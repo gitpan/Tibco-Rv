@@ -2,7 +2,7 @@ package Tibco::Rv::Status;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use overload '""' => 'toString', '0+' => 'toNum', fallback => 1;
@@ -40,7 +40,9 @@ Tibco::Rv::Status - status code
    my ( $status ) =
       new Tibco::Rv::Status( status => Tibco::Rv::INVALID_ARG );
 
-   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+   $status = $msg->removeField( $fieldName, $fieldId );
+   print "returned: $status\n" if ( $status != Tibco::Rv::OK );
+
 
 =head1 DESCRIPTION
 
@@ -52,10 +54,13 @@ Wrapper class for status codes.
 
 =item $status = new Tibco::Rv::Status( %args )
 
-   %args
+   %args:
       status => $status
 
-Creates a C<Tibco::Rv::Status> object with the given status.
+Creates a C<Tibco::Rv::Status> object with the given status.  C<$status>
+should be one of the
+L<Tibco::Rv Status Constants|Tibco::Rv/"STATUS CONSTANTS">, or an equivalent
+numeric value.
 
 =back
 
@@ -63,15 +68,15 @@ Creates a C<Tibco::Rv::Status> object with the given status.
 
 =over 4
 
-=item $num = $status->toNum (or 0+$status)
-
-Returns the numeric value of C<$status>.  Or, simply use C<$status> in a
-numeric context.
-
 =item $str = $status->toString (or "$status")
 
 Returns a descriptive string of C<$status>.  Or, simply use C<$status> in
 a string context.
+
+=item $num = $status->toNum (or 0+$status)
+
+Returns the numeric value of C<$status>.  Or, simply use C<$status> in a
+numeric context.
 
 =back
 

@@ -5,4 +5,5 @@ WriteMakefile
 (
    NAME => 'Tibco::Rv',
    VERSION_FROM => 'Rv.pm',
+CCFLAGS => "-DFOO",
 );

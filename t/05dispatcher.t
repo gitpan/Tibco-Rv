@@ -2,7 +2,7 @@ $^W = 0;
 
 use Tibco::Rv;
 
-print "1..1\n";
+print "1..3\n";
 my ( $ok ) = 0;
 sub ok { print 'ok ' . ++ $ok . "\n" }
 sub nok { print 'not ok ' . ++ $ok . "\n" }
@@ -11,12 +11,25 @@ sub nok { print 'not ok ' . ++ $ok . "\n" }
 my ( $rv ) = new Tibco::Rv;
 # two independent dispatchers doing send/recv
 # main loop listening on intraprocess transport, stop on timeout
-( 1 ) ? &ok : &nok;
+( defined $rv ) ? &ok : &nok;
+
+my ( $transport ) = $rv->createTransport( description => 'myTransport' );
+( $transport->description eq 'myTransport' ) ? &ok : &nok;
+eval
+{
+   ( $transport->batchMode( Tibco::Rv::Transport::TIMER_BATCH ) &&
+      $transport->batchMode == Tibco::Rv::Transport::TIMER_BATCH ) ? &ok : &nok;
+};
+if ( $@ )
+{
+   ( $Tibco::Rv::TIBRV_VERSION_MAJOR < 7 &&
+      $@ == Tibco::Rv::VERSION_MISMATCH ) ? &ok : &nok;
+}
+
 
 __DATA__
 TODO
 Rv:
-createTransport
 createQueue
 sendReply
 sendRequest
@@ -35,7 +48,4 @@ Queue:
 hook
 count
 name
-limitPolicy/priority?
-Transport:
-description
-batchMode
+limitPolicy/priority

@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -234,6 +234,10 @@ Tibco::Rv::Queue - Tibco Queue event-managing object
 =head1 CONSTRUCTOR
 
 =head1 METHODS
+
+=head1 CONSTANTS
+
+=head1 DEFAULT QUEUE
 
 =head1 AUTHOR
 

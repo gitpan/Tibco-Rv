@@ -2,7 +2,7 @@ package Tibco::Rv::Transport;
 
 
 use vars qw/ $VERSION $PROCESS /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use constant PROCESS_TRANSPORT => 10;
@@ -127,6 +127,8 @@ sub batchMode
 sub _setBatchMode
 {
    my ( $self, $batchMode ) = @_;
+   Tibco::Rv::die( Tibco::Rv::VERSION_MISMATCH )
+      unless ( $Tibco::Rv::TIBRV_VERSION_MAJOR >= 7 );
    my ( $status ) =
       Tibco::Rv::tibrvTransport_SetBatchMode( $self->{id}, $batchMode );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
@@ -174,6 +176,10 @@ Tibco::Rv::Transport - Tibco network transport object
 =head1 CONSTRUCTOR
 
 =head1 METHODS
+
+=head1 CONSTANTS
+
+=head1 INTRA-PROCESS TRANSPORT
 
 =head1 SEE ALSO
 

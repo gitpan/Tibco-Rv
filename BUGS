@@ -40,7 +40,3 @@ both callbacks into the Perl constructor.
 
 tibrvMsg_SetHandlers
 Not supported.  I'm sure no one wants this stuff, anyway.
-
-
-tibrv 6.x support
-Not tried.  Maybe it'll work, maybe it won't.

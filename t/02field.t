@@ -29,7 +29,7 @@ my ( $now ) = time;
 ( $field->xml( '<abcabc/>' ) && $field->xml eq '<abcabc/>' ) ? &ok : &nok;
 ( $field->opaque( "a\0bcabc" ) && $field->opaque eq "a\0bcabc" ) ? &ok : &nok;
 ( $field->str( "a\0bcabc" ) && $field->str eq "a" ) ? &ok : &nok;
-( $field->ipaddr32( '10.1.21.156' ) && $field->ipaddr32 eq '10.1.21.156' )
+( $field->ipaddr32( '66.33.193.143' ) && $field->ipaddr32 eq '66.33.193.143' )
    ? &ok : &nok;
 ( $field->ipport16( 10 ) && $field->ipport16 == 10 ) ? &ok : &nok;
 ( $field->i8( -10 ) && $field->i8 == -10 ) ? &ok : &nok;

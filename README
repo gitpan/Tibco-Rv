@@ -3,8 +3,7 @@ Tibco::Rv
 
 Tibco::Rv provides bindings and Object-Oriented classes for TIBCO's
 TIB/Rendezvous message passing C API.  It should be used as a replacement
-for the Perl bindings that ship with TIB/Rendezvous.  It has been tested
-against TIB/Rendezvous version 7.1.12 only.
+for the Perl bindings that ship with TIB/Rendezvous.
 
 See LICENSE for copyright statement and licensing information.
 
@@ -16,6 +15,7 @@ TIBCO provides free copies of TIB/Rendezvous licensed for developer use only.
 Other usage requires a purchased license.  See www.tibco.com for complete
 information on TIB/Rendezvous licensing.
 
-See INSTALL for instructions on how to build and install Tibco::Rv.
+See INSTALL for instructions on how to build and install Tibco::Rv, especially
+if you are building against a TIB/Rendezvous 6.x release.
 
 See t/*.t for code samples.

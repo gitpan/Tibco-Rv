@@ -2,7 +2,7 @@ package Tibco::Rv::Event;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use Tibco::Rv::Msg;
@@ -61,6 +61,18 @@ sub DESTROY
 
 Tibco::Rv::Event - Base class for Tibco events
 
+=head1 SYNOPSIS
+
+   use base qw/ Tibco::Rv::Event /;
+
+   sub new
+   {
+      # ...
+      my ( $self ) =
+         $proto->SUPER::new( queue => $queue, callback => $callback );
+      # ...
+   }
+
 =head1 DESCRIPTION
 
 Base class for Tibco Events -- Listeners, Timers, and IO events.  Don't
@@ -89,11 +101,25 @@ $Tibco::Rv::Queue::DEFAULT if not specified), and the given callback
 
 =item $queue = $event->queue
 
+Returns the queue on which events will be dispatched.
+
 =item $callback = $event->callback
+
+Returns the callback code reference.
 
 =item $event->onEvent
 
 =item $event->onEvent( $msg )
+
+Trigger an event directly.  Subclasses determine which version will be
+called.  L<Listener|Tibco::Rv::Listener> objects use the version with a
+C<$msg> parameter, L<Timer|Tibco::Rv::Timer> and L<IO|Tibco::Rv::IO>
+objects use the version with no paramters.
+
+=item $event->DESTROY
+
+Cancels interest in this event.  Called automatically when C<$event>
+goes out of scope.  Calling DESTROY more than once has no effect.
 
 =back
 

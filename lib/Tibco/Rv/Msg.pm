@@ -2,7 +2,7 @@ package Tibco::Rv::Msg;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use constant FIELDNAME_MAX => 127;
@@ -679,7 +679,7 @@ Transport object.
 =item $msg->sendSubject( $subject )
 
 Sets the subject on which C<$msg> will be published went sent via a
-Transport object.  Returns the new subject.
+Transport object.
 
 =item $subject = $msg->replySubject
 
@@ -704,16 +704,16 @@ Adds L<Field|Tibco::Rv::Msg::Field> C<$field> to C<$msg>.
       IPAddr32, IPPort16, DateTime, or Msg
 
 Adds C<$value> to C<$msg> at field C<$fieldName>, as type E<lt>typeE<gt>.
-C<$fieldId> is an optional field identifier.  It must be unique with this
+C<$fieldId> is an optional field identifier.  It must be unique within this
 message.
 
 Bool values should be Tibco::Rv::TRUE or Tibco::Rv::FALSE.
 
-Opaque values can contain embedded nulls ('\0'); String and Xml values
+Opaque values can contain embedded nulls "\0", while String and Xml values
 cannot (and if you try, they'll be truncated to the first null).
 
 IPAddr32 values should be specified in dotted-quad notation.  For example,
-'66.35.250.150'.
+'66.33.193.143'.
 
 DateTime values must be of type
 L<Tibco::Rv::Msg::DateTime|Tibco::Rv::Msg::DateTime>.
@@ -748,7 +748,7 @@ If C<$fieldId> is specified but is not found, and a field named C<$fieldName>
 is found but with a different C<$fieldId>, then this method dies with
 a Tibco::Rv::ID_CONFLICT Status message.
 
-=item $valueAryRef = $msg->get<type>Array( $fieldName, $fieldId )
+=item $valAryRef = $msg->get<type>Array( $fieldName, $fieldId )
 
    <type> can be:
       F32, F64, I8, I16, I32, I64, U8, U16, U32, U64,
@@ -807,7 +807,7 @@ C<$field>, this method dies with a Tibco::Rv::INVALID_TYPE Status message.
    <type> can be:
       F32, F64, I8, I16, I32, I64, U8, U16, U32, U64,
 
-Behaves the same as update<lt>typeE<gt>, except that it takes an array
+Behaves the same as updateE<lt>typeE<gt>, except that it takes an array
 reference of values instead of a single value.
 
 =item $msg->markReferences

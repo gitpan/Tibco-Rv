@@ -1,11 +1,12 @@
 package Tibco::Rv;
 
 
-use vars qw/ $VERSION /;
+use vars qw/ $VERSION $TIBRV_VERSION_MAJOR /;
 
 BEGIN
 {
-   $VERSION = '1.00';
+   $VERSION = '1.01';
+   $TIBRV_VERSION_MAJOR = 7;
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
 TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
@@ -24,6 +25,10 @@ TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
 }
 
 use Inline C => Config =>
+   AUTO_INCLUDE => <<END,
+#include <tibrv/tibrv.h>
+#define TIBRV_VERSION_MAJOR $TIBRV_VERSION_MAJOR
+END
    AUTOWRAP => 'ENABLE',
    TYPEMAPS => 'typemap',
    LIBS => "-L$ENV{TIB_RV_HOME}/lib -ltibrv",
@@ -322,8 +327,9 @@ Returns a string of the form:
 
    tibrv x.x.xx; Tibco::Rv y.yy
 
-where x.x.xx is the version of TIB/Rendezvous being used, and y.yy is the
-version of this module being used.
+where x.x.xx is the version of TIB/Rendezvous (the tibrv C library) that is
+being used, and y.yy is the version of Tibco::Rv (this Perl module) that is
+being used.
 
 =item $transport = $rv->processTransport
 
@@ -595,6 +601,21 @@ Blocking wait on event dispatch calls (waits until an event occurs)
 
 Non-blocking wait on event dispatch calls (returns immediately)
 
+=item Tibco::Rv::VERSION => <this version>
+
+Programmatically access the installed version of Tibco::Rv, in the form 'x.xx'
+
+=item Tibco::Rv::TIBRV_VERSION_MAJOR => <build option>
+
+Programmatically access the major version of TIB/Rendezvous.  For instance,
+TIBRV_VERSION_MAJOR = 7 for all releases in the Rv 7.x series, or 6 for
+all releases in the Rv 6.x series.  This allows for backwards compatibility
+when building Tibco::Rv against any version of tibrv, 6.x or later.
+
+If Tibco::Rv is built against an Rv 6.x release, then using any function
+available only in Rv 7.x will die with a Tibco::Rv::VERSION_MISMATCH Status
+message.
+
 =back
 
 =head1 SEE ALSO
@@ -633,24 +654,20 @@ TIBCO and TIB/Rendezvous are trademarks of TIBCO, Inc.
 
 TIB/Rendezvous copyright notice:
 
-C<
-/*
- * Copyright (c) 1998-2000 TIBCO Software Inc.
- * All rights reserved.
- * TIB/Rendezvous is protected under US Patent No. 5,187,787.
- * For more information, please contact:
- * TIBCO Software Inc., Palo Alto, California, USA
- *
- * @(#)tibrv.h  2.9
- */
->
+ /*
+  * Copyright (c) 1998-2000 TIBCO Software Inc.
+  * All rights reserved.
+  * TIB/Rendezvous is protected under US Patent No. 5,187,787.
+  * For more information, please contact:
+  * TIBCO Software Inc., Palo Alto, California, USA
+  *
+  * @(#)tibrv.h  2.9
+  */
 
 =cut
 
 
 __C__
-
-#include <tibrv/tibrv.h>
 
 
 tibrv_status tibrv_Open( );
@@ -748,8 +765,10 @@ tibrv_status tibrvTransport_SendReply( tibrvTransport transport,
    tibrvMsg reply, tibrvMsg request ); 
 tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
    const char * description ); 
+#if TIBRV_VERSION_MAJOR >= 7
 tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
    tibrvTransportBatchMode mode ); 
+#endif
 tibrv_status tibrvTransport_Destroy( tibrvTransport transport );
 
 

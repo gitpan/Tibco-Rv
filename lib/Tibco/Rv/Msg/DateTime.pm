@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::DateTime;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 my ( %defaults );
@@ -126,10 +126,10 @@ Tibco::Rv::Msg::DateTime - Tibco DateTime datatype
 
 =head1 SYNOPSIS
 
-my ( $date ) = $msg->createDateTime;
-my ( $now ) = Tibco::Rv::Msg::DateTime->now;
-$msg->addDateTime( now => $now );
-print "time: $now\n";
+   my ( $date ) = $msg->createDateTime;
+   my ( $now ) = Tibco::Rv::Msg::DateTime->now;
+   $msg->addDateTime( now => $now );
+   print "time: $now\n";
 
 =head1 DESCRIPTION
 
@@ -163,15 +163,31 @@ time.
 
 =item $sec = $date->sec
 
+Returns the seconds.
+
 =item $date->sec( $sec )
+
+Sets the seconds.
 
 =item $nsec = $date->nsec
 
+Returns the nanoseconds.
+
 =item $date->nsec( $nsec )
+
+Sets the nanoseconds.
+
+=item $str = $date->toString (or "$date")
+
+Returns a string representation of C<$date>.  For example,
+"Fri Jan 31 04:43:55 2003Z".  Note that this is Zulu (GMT) time.  Or,
+simply use C<$date> in a string context.
 
 =item $date->toNum (or 0+$date)
 
-=item $date->toString (or "$date")
+Returns the number of seconds since the epoch represented by C<$date>.
+Suitable for passing to localtime( ) or other time functions.  Or,
+simply use C<$date> in a numeric context.
 
 =back
 

@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use constant READ => 1;
@@ -53,6 +53,8 @@ Tibco::Rv::IO - Tibco IO event object
 =head1 CONSTRUCTOR
 
 =head1 METHODS
+
+=head1 OVERRIDING EVENT CALLBACK
 
 =head1 AUTHOR
 

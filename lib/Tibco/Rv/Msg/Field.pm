@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.00';
+$VERSION = '1.01';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -325,19 +325,43 @@ C<$field> is initialized with boolean value C<Tibco::Rv::FALSE>.
 
 =item $name = $field->name
 
+Returns C<$field>'s name.
+
 =item $field->name( $name )
+
+Sets C<$field>'s name.
 
 =item $id = $field->id
 
+Returns C<$field>'s id.
+
 =item $field->id( $id )
+
+Sets C<$field>'s id.
 
 =item $count = $field->count
 
+Returns C<$field>'s count.  For array types, C<$count> is the number of
+elements in the array.  For all other types, C<$count> is 1.
+
 =item $size = $field->size
+
+Returns C<$field>'s size.  For array types, C<$size> is the size in bytes 
+of one element of the array.  For all other types, C<$size> is the size in
+bytes of the data (for strings, this includes the NULL terminator, and for
+xml or opaque fields, this is the total number of bytes).
 
 =item $type = $field->type
 
+Returns the
+L<Tibco::Msg Message Type Constant|Tibco::Msg/"MESSAGE TYPE CONSTANTS">
+representing the type of data contained in the field.
+
 =item $value = $field-><type>
+
+Gets the C<$value> currently held in C<$field>.  Dies with a
+Tibco::Rv::ARG_CONFLICT Status message if E<lt>typeE<gt> does not match
+the type of data currently held by C<$field>.
 
 =item $field-><type>( $value )
 
@@ -346,12 +370,19 @@ C<$field> is initialized with boolean value C<Tibco::Rv::FALSE>.
       f32, f64, i8, i16, i32, i64, u8, u16, u32, u64,
       ipaddr32, ipport16, date, or msg
 
+Sets the value of C<$field> to C<$value>, changing C<$field> to type
+E<lt>typeE<gt> if it is not already.
+
 =item $valueAryRef = $field-><type>array
+
+Same as E<lt>typeE<gt>, except it returns an array reference of values.
 
 =item $field-><type>array( [ $val1, $val2, ... ] )
 
    <type> can be:
       f32, f64, i8, i16, i32, i64, u8, u16, u32, u64
+
+Some as E<lt>typeE<gt>, except it must be given an array reference of values.
 
 =back
 
