@@ -2,7 +2,7 @@ package Tibco::Rv::Queue;
 
 
 use vars qw/ $VERSION $DEFAULT /;
-$VERSION = '1.03';
+$VERSION = '1.10';
 
 
 use constant DEFAULT_QUEUE => 1;
@@ -19,6 +19,7 @@ use constant DEFAULT_PRIORITY => 1;
 use Tibco::Rv::Listener;
 use Tibco::Rv::Timer;
 use Tibco::Rv::IO;
+use Tibco::Rv::Cm::Listener;
 use Tibco::Rv::Dispatcher;
 
 
@@ -93,6 +94,7 @@ sub createIO
    my ( $self, %args ) = @_;
    return new Tibco::Rv::IO( queue => $self, %args );
 }
+### sub createCmListener??
 
 
 sub createDispatcher
@@ -165,6 +167,7 @@ sub name
 sub _setName
 {
    my ( $self, $name ) = @_;
+   $name = '' unless ( defined $name );
    my ( $status ) = Tibco::Rv::tibrvQueue_SetName( $self->{id}, $name );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    return $self->{name} = $name;
@@ -358,7 +361,7 @@ Returns the name of C<$queue>.
 
 Sets C<$queue>'s name to C<$name>.  The queue's name appears in advisory
 messages concerning queues, so it should be set to a unique value in order
-to assist troubleshooting.
+to assist troubleshooting.  If C<$name> is C<undef>, sets name to ''.
 
 =item $priority = $queue->priority
 

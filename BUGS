@@ -1,4 +1,9 @@
 Certified Messaging unimplemented
+impl/doco Tibco::Rv::Cm::Transport
+impl/doco Tibco::Rv::Cm::Msg
+impl/doco Tibco::Rv::Cm::Listener
+impl/doco Tibco::Rv createCmMsg, createCmTransport, createCmListener
+#### queue createCmListener?? impl/doco
 
 
 Fault Tolerance unimplemented
@@ -11,6 +16,11 @@ Virtual Circuits unimplemented
 
 
 Secure Daemon connections unimplemented
+
+
+Cm::Transport connectToRelayAgent/disconnectFromRelayAgent return INVALID_ARG
+instead of ARG_CONFLICT as specified in the TIB/Rendezvous documentation.
+(It's just a documentation error.  I should really email them about that ...)
 
 
 IO should probably take socketId => \*GLOB instead of a fileno

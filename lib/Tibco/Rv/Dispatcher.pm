@@ -2,14 +2,14 @@ package Tibco::Rv::Dispatcher;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.03';
+$VERSION = '1.10';
 
 
 sub new
 {
    my ( $proto ) = shift;
-   my ( %params ) = ( name => undef, dispatchable => $Tibco::Rv::Queue::DEFAULT,
-      idleTimeout => Tibco::Rv::WAIT_FOREVER );
+   my ( %params ) = ( dispatchable => $Tibco::Rv::Queue::DEFAULT,
+      idleTimeout => Tibco::Rv::WAIT_FOREVER, name => 'dispatcher' );
    my ( %args ) = @_;
    map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
       unless ( exists $params{$_} ) } keys %args;
@@ -36,9 +36,11 @@ sub name
    return @_ ? $self->_setName( @_ ) : $self->{name};
 }
 
+
 sub _setName
 {
    my ( $self, $name ) = @_;
+   $name = '' unless ( defined $name );
    my ( $status ) =
       Tibco::Rv::tibrvDispatcher_SetName( $self->{id}, $name );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
@@ -95,7 +97,7 @@ L<Tibco::Rv::QueueGroup|Tibco::Rv::QueueGroup>.
 
 Creates a C<Tibco::Rv::Dispatcher>.  If not specified, dispatchable defaults
 to the L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">, name defaults to
-C<undef>, and idleTimeout defaults to C<Tibco::Rv::WAIT_FOREVER>.
+'dispatcher', and idleTimeout defaults to C<Tibco::Rv::WAIT_FOREVER>.
 
 Upon creating C<$dispatcher>, it starts a separate thread, which repeatedly
 calls C<timedDispatch> on C<$dispatchable>, passing it the C<$idleTimeout>
@@ -133,7 +135,8 @@ Returns the name of C<$dispatcher>.
 =item $dispatcher->name( $name )
 
 Sets C<$dispatcher>'s name to C<$name>.  Use this to distinguish multiple
-dispatchers and assist troubleshooting.
+dispatchers and assist troubleshooting.  If C<$name> is C<undef>, sets name
+to ''.
 
 =item $dispatcher->DESTROY
 

@@ -5,7 +5,7 @@ use vars qw/ $VERSION $TIBRV_VERSION_RELEASE /;
 
 BEGIN
 {
-   $VERSION = '1.04';
+   $VERSION = '1.10';
    $TIBRV_VERSION_RELEASE = 7;
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
@@ -26,12 +26,12 @@ TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
 
 use Inline C => Config =>
    AUTO_INCLUDE => <<END,
-#include <tibrv/tibrv.h>
+#include <tibrv/cm.h>
 #define TIBRV_VERSION_RELEASE $TIBRV_VERSION_RELEASE
 END
    AUTOWRAP => 'ENABLE',
    TYPEMAPS => 'typemap',
-   LIBS => "-L$ENV{TIB_RV_HOME}/lib -ltibrv",
+   LIBS => "-L$ENV{TIB_RV_HOME}/lib -ltibrv -ltibrvcm",
    INC => "-I$ENV{TIB_RV_HOME}/include";
 use Inline C => 'DATA', NAME => 'Tibco::Rv', VERSION => $VERSION;
 
@@ -120,6 +120,7 @@ use constant NO_WAIT => 0.0;
 use Tibco::Rv::Status;
 use Tibco::Rv::Transport;
 use Tibco::Rv::QueueGroup;
+use Tibco::Rv::Cm::Transport;
 
 
 sub die
@@ -134,7 +135,8 @@ sub die
 
 sub version
 {
-   return 'tibrv ' . tibrv_Version( ) . "; Tibco::Rv $VERSION";
+   return 'tibrv ' . tibrv_Version( ) . '; tibrvcm ' . tibrvcm_Version( ) .
+      "; Tibco::Rv $VERSION";
 }
 
 
@@ -185,8 +187,10 @@ sub stop
 
 
 sub createMsg { shift; return new Tibco::Rv::Msg( @_ ) }
+sub createCmMsg { shift; return new Tibco::Rv::Cm::Msg( @_ ) }
 sub createQueueGroup { shift; return new Tibco::Rv::QueueGroup( @_ ) }
 sub createTransport { shift; return new Tibco::Rv::Transport( @_ ) }
+sub createCmTransport { shift; return new Tibco::Rv::Cm::Transport( @_ ) }
 
 sub createDispatcher { return shift->{queueGroup}->createDispatcher( @_ ) }
 sub createQueue { return shift->{queueGroup}->createQueue( @_ ) }
@@ -202,6 +206,11 @@ sub createListener
    my ( $self, %args ) = @_;
    return
       $self->{queue}->createListener( transport => $self->{transport}, %args );
+}
+
+
+sub createCmListener
+{
 }
 
 
@@ -329,11 +338,12 @@ around all Tibco::Rv code if you care about that sort of thing.
 
 Returns a string of the form:
 
-   tibrv x.x.xx; Tibco::Rv y.yy
+   tibrv x.x.xx; tibrvcm y.y.yy; Tibco::Rv z.zz
 
 where x.x.xx is the version of TIB/Rendezvous (the tibrv C library) that is
-being used, and y.yy is the version of Tibco::Rv (this Perl module) that is
-being used.
+being used, y.y.yy is the version of TIB/Rv Certified Messaging (the tibrvcm
+C library) that is being used, and z.zz is the version of Tibco::Rv (this Perl
+ module) that is being used.
 
 =item $transport = $rv->processTransport
 
@@ -463,6 +473,34 @@ via the Default Transport.
 
 Returns a new C<$inbox> subject.  See L<Tibco::Rv::Msg|Tibco::Rv::Msg> for
 a more detailed discussion of sendRequest, sendReply, and createInbox.
+
+=item $cmMsg = $rv->createCmMsg
+
+   %args:
+      sendSubject => $sendSubject,
+      replySubject => $replySubject,
+      $fieldName1 => $stringValue1,
+      $fieldName2 => $stringValue2, ...
+
+Returns a new L<CmMsg|Tibco::Rv::Cm::Msg> object, with sendSubject and
+replySubject as given in %args (sendSubject and replySubject default to
+C<undef> if not specified).  Any other name => value pairs are added as
+string fields.
+
+... other args ... ??
+
+=item $cmTransport = $rv->createCmTransport( %args )
+
+   %args:
+      service => $service,
+      network => $network,
+      daemon => $daemon
+
+Returns a new L<CmTransport|Tibco::Rv::Cm::Transport> object, using the given
+service/network/daemon arguments.  These arguments can be C<undef> or
+not specified to use the default arguments.
+
+... plenty of other args ...
 
 =item $rv->DESTROY
 
@@ -773,16 +811,44 @@ tibrv_status tibrvQueueGroup_Destroy( tibrvQueueGroup queueGroup );
 tibrv_status tibrvDispatcher_SetName( tibrvDispatcher dispatcher,
    const char * name );
 tibrv_status tibrvDispatcher_Destroy( tibrvDispatcher dispatcher );
+tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
+   const char * description );
 tibrv_status tibrvTransport_Send( tibrvTransport transport, tibrvMsg message );
 tibrv_status tibrvTransport_SendReply( tibrvTransport transport,
    tibrvMsg reply, tibrvMsg request ); 
-tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
-   const char * description ); 
 #if TIBRV_VERSION_RELEASE >= 7
 tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
    tibrvTransportBatchMode mode ); 
 #endif
 tibrv_status tibrvTransport_Destroy( tibrvTransport transport );
+
+const char * tibrvcm_Version( );
+tibrv_status tibrvcmTransport_Destroy( tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_SetDefaultCMTimeLimit(
+   tibrvcmTransport cmTransport, tibrv_f64 timeLimit );
+tibrv_status tibrvcmTransport_Send( tibrvcmTransport cmTransport,
+   tibrvMsg message );
+tibrv_status tibrvcmTransport_SendReply( tibrvcmTransport cmTransport,
+   tibrvMsg reply, tibrvMsg request ); 
+tibrv_status tibrvcmTransport_AddListener( tibrvcmTransport cmTransport,
+   const char * cmName, const char * subject ); 
+tibrv_status tibrvcmTransport_AllowListener( tibrvcmTransport cmTransport,
+   const char * cmName ); 
+tibrv_status tibrvcmTransport_DisallowListener( tibrvcmTransport cmTransport,
+   const char * cmName ); 
+tibrv_status tibrvcmTransport_RemoveListener( tibrvcmTransport cmTransport,
+   const char * cmName, const char * subject ); 
+tibrv_status tibrvcmTransport_ConnectToRelayAgent(
+   tibrvcmTransport cmTransport );
+tibrv_status tibrvcmTransport_DisconnectFromRelayAgent(
+   tibrvcmTransport cmTransport ); 
+tibrv_status tibrvcmTransport_RemoveSendState( tibrvcmTransport cmTransport,
+   const char * subject ); 
+tibrv_status tibrvcmTransport_SyncLedger( tibrvcmTransport cmTransport ); 
+tibrv_status tibrvcmEvent_SetExplicitConfirm( tibrvcmEvent cmListener ); 
+tibrv_status tibrvcmEvent_ConfirmMsg( tibrvcmEvent cmListener,
+   tibrvMsg message );
+tibrv_status tibrvMsg_SetCMTimeLimit( tibrvMsg message, tibrv_f64 timeLimit ); 
 
 
 static void callback_perl_noargs( SV * callback )
@@ -1288,8 +1354,6 @@ tibrv_status Msg_UpdateIPPort16( tibrvMsg message, const char * fieldName,
 
 
 tibrv_status MsgDateTime_Create( SV * sv_date, tibrv_i64 sec, tibrv_u32 nsec );
-void MsgField_SetName( tibrvMsgField * field, const char * name );
-void MsgField_SetId( tibrvMsgField * field, tibrv_u16 id );
 
 
 tibrv_status MsgField_Create( SV * sv_field, const char * name, tibrv_u16 id )
@@ -1463,6 +1527,7 @@ void MsgField_GetValues( tibrvMsgField * field, SV * sv_name, SV * sv_id,
             (UV)field->data.date.nsec );
       break;
    }
+   if ( ! field->name ) field->name = strdup( "" );
    sv_setpv( sv_name, field->name );
    sv_setuv( sv_id, (UV)field->id );
    sv_setuv( sv_size, (UV)field->size );
@@ -1759,7 +1824,20 @@ tibrv_status Event_DestroyEx( tibrvEvent event )
 }
 
 
+tibrv_status cmEvent_DestroyEx( tibrvcmEvent cmEvent,
+   tibrv_bool cancelAgreements )
+{
+   return tibrvcmEvent_DestroyEx( cmEvent, cancelAgreements, NULL );
+}
+
+
 static void onEventMsg( tibrvEvent event, tibrvMsg message, void * closure )
+{
+   callback_perl_msg( (SV *)closure, message );
+}
+
+
+static void onEventCmMsg( tibrvcmEvent event, tibrvMsg message, void * closure )
 {
    callback_perl_msg( (SV *)closure, message );
 }
@@ -1905,4 +1983,89 @@ tibrv_status Transport_CreateInbox( tibrvTransport transport, SV * sv_inbox )
    tibrv_status status = tibrvTransport_CreateInbox( transport, inbox, limit );
    sv_setpv( sv_inbox, inbox );
    return status;
+}
+
+
+tibrv_status cmTransport_Create( SV * sv_cmTransport, tibrvTransport transport,
+   SV * sv_cmName, tibrv_bool requestOld, SV * sv_ledgerName,
+   tibrv_bool syncLedger, SV * sv_relayAgent )
+{
+   const char * cmName = NULL;
+   const char * ledgerName = NULL;
+   const char * relayAgent = NULL;
+   tibrvcmTransport cmTransport = (tibrvcmTransport)NULL;
+   tibrv_status status;
+
+   if ( SvOK( sv_cmName ) ) cmName = SvPV( sv_cmName, PL_na );
+   if ( SvOK( sv_ledgerName ) ) ledgerName = SvPV( sv_ledgerName, PL_na );
+   if ( SvOK( sv_relayAgent ) ) relayAgent = SvPV( sv_relayAgent, PL_na );
+
+   status = tibrvcmTransport_Create( &cmTransport, transport, cmName,
+      requestOld, ledgerName, syncLedger, relayAgent );
+   sv_setiv( sv_cmTransport, (IV)cmTransport );
+   return status;
+}
+
+
+void cmTransport_GetName( tibrvcmTransport cmTransport, SV * sv_cmName )
+{
+   const char * cmName;
+   tibrvcmTransport_GetName( cmTransport, &cmName );
+   sv_setpv( sv_cmName, cmName );
+}
+
+
+tibrv_status cmTransport_SendRequest( tibrvcmTransport cmTransport,
+   tibrvMsg request, SV * sv_reply, tibrv_f64 timeout )
+{
+   tibrvMsg reply = (tibrvMsg)NULL;
+   tibrv_status status =
+      tibrvcmTransport_SendRequest( cmTransport, request, &reply, timeout );
+   sv_setiv( sv_reply, (IV)reply );
+   return status;
+}
+
+
+static void * onLedgerSubject( tibrvcmTransport cmTransport,
+   const char * subject, tibrvMsg message, void * closure )
+{
+   tibrvMsg copy = NULL;
+   tibrv_status status = tibrvMsg_CreateCopy( message, &copy );
+   if ( status == TIBRV_OK ) callback_perl_msg( (SV *)closure, copy );
+   return NULL;
+}
+
+
+tibrv_status cmTransport_ReviewLedger( tibrvcmTransport cmTransport,
+   const char * subject, SV * callback )
+{
+   return tibrvcmTransport_ReviewLedger( cmTransport, onLedgerSubject, subject,
+      callback );
+}
+
+
+tibrv_status cmEvent_CreateListener( SV * sv_event, tibrvQueue queue,
+   SV * callback, tibrvcmTransport transport, const char * subject )
+{
+   tibrvEvent event = (tibrvEvent)NULL;
+   tibrv_status status = tibrvcmEvent_CreateListener( &event, queue,
+      onEventCmMsg, transport, subject, callback );
+   sv_setiv( sv_event, (IV)event );
+   return status;
+}
+
+
+void Msg_GetCMValues( tibrvMsg message, SV * sv_CMSender, SV * sv_CMSequence,
+   SV * sv_CMTimeLimit )
+{
+   const char * CMSender = NULL;
+   tibrv_u64 CMSequence = 0;
+   tibrv_f64 CMTimeLimit = 0.0;
+
+   if ( tibrvMsg_GetCMSender( message, &CMSender ) == TIBRV_OK )
+      sv_setpv( sv_CMSender, CMSender );
+   if ( tibrvMsg_GetCMSequence( message, &CMSequence ) == TIBRV_OK )
+      sv_setuv( sv_CMSequence, (UV)CMSequence );
+   if ( tibrvMsg_GetCMTimeLimit( message, &CMTimeLimit ) == TIBRV_OK )
+      sv_setnv( sv_CMTimeLimit, CMTimeLimit );
 }

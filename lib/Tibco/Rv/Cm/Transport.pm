@@ -1,21 +1,22 @@
-package Tibco::Rv::Transport;
+package Tibco::Rv::Cm::Transport;
 
 
-use vars qw/ $VERSION $PROCESS /;
+use vars qw/ $VERSION /;
 $VERSION = '1.10';
 
 
-use constant PROCESS_TRANSPORT => 10;
-
-use constant DEFAULT_BATCH => 0;
-use constant TIMER_BATCH => 1;
+use Tibco::Rv::Transport;
+use Tibco::Rv::Cm::Msg;
+use Tibco::Rv::Msg;
 
 
 my ( %defaults );
 BEGIN
 {
-   %defaults = ( service => '', network => '', daemon => 'tcp:7500',
-      batchMode => DEFAULT_BATCH, description => undef );
+   %defaults = ( transport => undef, cmName => undef,
+      requestOld => Tibco::Rv::FALSE, ledgerName => undef,
+      syncLedger => Tibco::Rv::FALSE, relayAgent => undef,
+      defaultCMTimeLimit => 0 );
 }
 
 
@@ -23,25 +24,35 @@ sub new
 {
    my ( $proto ) = shift;
    my ( %args ) = @_;
+   $args{transport} = new Tibco::Rv::Transport( service => $args{service},
+      network => $args{network}, daemon => $args{daemon} )
+         unless ( exists $args{transport} and defined $args{transport} );
+   delete @args{ qw/ service network daemon / };
    map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
       unless ( exists $defaults{$_} ) } keys %args;
    my ( %params ) = ( %defaults, %args );
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
-   my ( @snd ) = qw/ service network daemon /;
-   map { $params{$_} = '' unless ( defined $params{$_} ) } @snd;
-   @$self{ @snd } = @params{ @snd };
+   @$self{ keys %defaults } = @params{ keys %defaults };
 
-   my ( $status ) = Tibco::Rv::Transport_Create( @$self{ 'id', @snd } );
+   my ( $status ) =
+      Tibco::Rv::cmTransport_Create( $self->{id}, $self->{transport}{id},
+         @$self{ qw/ cmName requestOld ledgerName syncLedger relayAgent / } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 
-   $self->batchMode( $params{batchMode} )
-      if ( $params{batchMode} != DEFAULT_BATCH );
-   $self->description( $params{description} )
-      if ( defined $params{description} );
+   $self->_getName unless ( defined $self->{cmName} );
+   $self->defaultCMTimeLimit( $self->{defaultCMTimeLimit} )
+      if ( $self->{defaultCMTimeLimit} != 0 );
 
    return $self;
+}
+
+
+sub _getName
+{
+   my ( $self ) = @_;
+   Tibco::Rv::cmTransport_GetName( @$self{ qw/ id cmName / } );
 }
 
 
@@ -52,28 +63,45 @@ sub _new
 }
 
 
-sub _adopt
+sub name { return shift->{cmName} }
+sub ledgerName { return shift->{ledgerName} }
+sub relayAgent { return shift->{relayAgent} }
+sub requestOld { return shift->{requestOld} }
+sub syncLedger { return shift->{syncLedger} }
+sub transport { return shift->{transport} }
+
+
+sub defaultCMTimeLimit
 {
-   my ( $proto, $id ) = @_;
-
-   my ( $class ) = ref( $proto );
-   return bless $proto->_new( $id ), $proto unless ( $class );
-
-   $proto->DESTROY;
-   @$proto{ 'id', keys %defaults } = ( $id, values %defaults );
+   my ( $self ) = shift;
+   return @_ ?
+      $self->_setDefaultCMTimeLimit( @_ ) : $self->{defaultCMTimeLimit};
 }
 
 
-sub service { return shift->{service} }
-sub network { return shift->{network} }
-sub daemon { return shift->{daemon} }
+sub service { return shift->{transport}->service( @_ ) }
+sub network { return shift->{transport}->transport( @_ ) }
+sub daemon { return shift->{transport}->daemon( @_ ) }
+sub description { return shift->{transport}->description( @_ ) }
+sub batchMode { return shift->{transport}->batchMode( @_ ) }
+sub createInbox { return shift->{transport}->createInbox( @_ ) }
+
+
+sub _setDefaultCMTimeLimit
+{
+   my ( $self, $defaultCMTimeLimit ) = @_;
+   my ( $status ) = Tibco::Rv::tibrvcmTransport_SetDefaultCMTimeLimit(
+      $self->{id}, $defaultCMTimeLimit );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+   return $self->{defaultCMTimeLimit} = $defaultCMTimeLimit;
+}
 
 
 sub send
 {
    my ( $self, $msg ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvTransport_Send( $self->{id}, $msg->{id} );
+      Tibco::Rv::tibrvcmTransport_Send( $self->{id}, $msg->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
@@ -92,59 +120,102 @@ sub sendRequest
    my ( $self, $request, $timeout ) = @_;
    $timeout = Tibco::Rv::WAIT_FOREVER unless ( defined $timeout );
    my ( $reply );
-   my ( $status ) = Tibco::Rv::Transport_SendRequest( $self->{id},
+   my ( $status ) = Tibco::Rv::cmTransport_SendRequest( $self->{id},
       $request->{id}, $reply, $timeout );
    Tibco::Rv::die( $status )
       unless ( $status == Tibco::Rv::OK or $status == Tibco::Rv::TIMEOUT );
    return ( $status == Tibco::Rv::OK )
-      ? Tibco::Rv::Msg->_adopt( $reply ) : undef;
+      ? Tibco::Rv::Cm::Msg->_adopt( $reply ) : undef;
 }
 
 
-sub description
+sub addListener
 {
-   my ( $self ) = shift;
-   return @_ ? $self->_setDescription( @_ ) : $self->{description};
-}
-
-
-sub _setDescription
-{
-   my ( $self, $description ) = @_;
-   $description = '' unless ( defined $description );
+   my ( $self, $cmName, $subject ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvTransport_SetDescription( $self->{id}, $description );
-   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
-   return $self->{description} = $description;
+      Tibco::Rv::tibrvcmTransport_AddListener( $self->{id}, $cmName, $subject );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
+      or $status == Tibco::Rv::NOT_PERMITTED );
+   return new Tibco::Rv::Status( status => $status );
 }
 
 
-sub batchMode
+sub allowListener
 {
-   my ( $self ) = shift;
-   return @_ ? $self->_setBatchMode( @_ ) : $self->{batchMode};
-}
-
-
-sub _setBatchMode
-{
-   my ( $self, $batchMode ) = @_;
-   Tibco::Rv::die( Tibco::Rv::VERSION_MISMATCH )
-      unless ( $Tibco::Rv::TIBRV_VERSION_RELEASE >= 7 );
+   my ( $self, $cmName ) = @_;
    my ( $status ) =
-      Tibco::Rv::tibrvTransport_SetBatchMode( $self->{id}, $batchMode );
+      Tibco::Rv::tibrvcmTransport_AllowListener( $self->{id}, $cmName );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
-   return $self->{batchMode} = $batchMode;
 }
 
 
-sub createInbox
+sub disallowListener
+{
+   my ( $self, $cmName ) = @_;
+   my ( $status ) =
+      Tibco::Rv::tibrvcmTransport_DisallowListener( $self->{id}, $cmName );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+}
+
+
+sub removeListener
+{
+   my ( $self, $cmName, $subject ) = @_;
+   my ( $status ) = Tibco::Rv::tibrvcmTransport_RemoveListener(
+      $self->{id}, $cmName, $subject );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
+      or $status == Tibco::Rv::INVALID_SUBJECT );
+   return new Tibco::Rv::Status( status => $status );
+}
+
+
+sub removeSendState
+{
+   my ( $self, $subject ) = @_;
+   my ( $status ) =
+      Tibco::Rv::tibrvcmTransport_RemoveSendState( $self->{id}, $subject );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
+}
+
+
+sub sync
 {
    my ( $self ) = @_;
-   my ( $inbox );
-   my ( $status ) = Tibco::Rv::Transport_CreateInbox( $self->{id}, $inbox );
+   my ( $status ) = Tibco::Rv::tibrvcmTransport_SyncLedger( $self->{id} );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
+      or $status == Tibco::Rv::INVALID_ARG );
+   return new Tibco::Rv::Status( status => $status );
+}
+
+
+sub reviewLedger
+{
+   my ( $self, $subject, $callback ) = @_;
+   my ( $status ) = Tibco::Rv::cmTransport_ReviewLedger( $self->{id},
+      $subject, sub { $callback->( Tibco::Rv::Msg->_adopt( shift ) ) } );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
-   return $inbox;
+}
+
+
+sub connectToRelayAgent
+{
+   my ( $self ) = @_;
+   my ( $status ) =
+      Tibco::Rv::tibrvcmTransport_ConnectToRelayAgent( $self->{id} );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
+      or $status == Tibco::Rv::INVALID_ARG );
+   return new Tibco::Rv::Status( status => $status );
+}
+
+
+sub disconnectFromRelayAgent
+{
+   my ( $self ) = @_;
+   my ( $status ) =
+      Tibco::Rv::tibrvcmTransport_DisconnectFromRelayAgent( $self->{id} );
+   Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK
+      or $status == Tibco::Rv::INVALID_ARG );
+   return new Tibco::Rv::Status( status => $status );
 }
 
 
@@ -153,13 +224,10 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( defined $self->{id} );
 
-   my ( $status ) = Tibco::Rv::tibrvTransport_Destroy( $self->{id} );
+   my ( $status ) = Tibco::Rv::tibrvcmTransport_Destroy( $self->{id} );
    delete @$self{ keys %$self };
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
-
-
-BEGIN { $PROCESS = Tibco::Rv::Transport->_adopt( PROCESS_TRANSPORT ) }
 
 
 1;
@@ -169,19 +237,15 @@ BEGIN { $PROCESS = Tibco::Rv::Transport->_adopt( PROCESS_TRANSPORT ) }
 
 =head1 NAME
 
-Tibco::Rv::Transport - Tibco network transport object
+Tibco::Rv::Cm::Transport - Tibco Certified Messaging transport object
 
 =head1 SYNOPSIS
 
-   $transport = new Tibco::Rv::Transport;
-   $msg = $rv->createMessage;
-   $msg->addString( abc => 123 );
-   $transport->send( $msg );
+   #$transport = new Tibco::Rv::Cm::Transport;
 
 =head1 DESCRIPTION
 
-A C<Tibco::Rv::Transport> object represents a connection to a Rendezvous
-daemon, which routes messages to other Tibco programs.
+A C<Tibco::Rv::Cm::Transport> object ...
 
 =head1 CONSTRUCTOR
 
@@ -190,26 +254,17 @@ daemon, which routes messages to other Tibco programs.
 =item $transport = new Tibco::Rv::Transport( %args )
 
    %args:
-      service => $service,
-      network => $network,
-      daemon => $daemon,
-      description => $description,
-      batchMode => $batchMode
+      ...
 
-Creates a C<Tibco::Rv::Transport>.  If not specified, service defaults to ''
-(the rendezvous service), network defaults to '' (no network), and daemon
-defaults to 'tcp:7500' (see your TIB/Rendezvous documentation for discussion
-on the service/network/daemon parameters).  Description defaults to C<undef>,
-and batchMode defaults to Tibco::Rv::Transport::DEFAULT_BATCH.  If Tibco::Rv
-was built against an Rv 6.x version, then the constructor will die with a
-Tibco::Rv::VERSION_MISMATCH Status message if you attempt to set batchMode
-to anything other than Tibco::Rv::Transport::DEFAULT_BATCH.
+Creates a C<Tibco::Rv::Cm::Transport>.  If not specified ...
 
 =back
 
 =head1 METHODS
 
 =over 4
+
+=item FIX ALL THESE
 
 =item $service = $transport->service
 
@@ -232,11 +287,6 @@ Returns the description of C<$transport>.
 Sets the description of C<$transport>.  Description identifies this transport
 to TIB/Rendezvous components.  It is displayed in the browser administration
 interface.
-
-Although description defaults to C<undef>, if you try to set it to C<undef>,
-it ends up being '' (this matches the behaviour of the C API, if you consider
-Perl C<undef> to be equivalent to C NULL, and Perl '' to be equivalent to C
-"").
 
 =item $batchMode = $transport->batchMode
 
@@ -310,34 +360,9 @@ DESTROY more than once has no effect.
 
 =back
 
-=head1 CONSTANTS
-
-=over 4
-
-=item Tibco::Rv::Transport::DEFAULT_BATCH
-
-Specifies that the transport should send outbound messages to the
-TIB/Rendezvous daemon immediately.
-
-=item Tibco::Rv::Transport::TIMER_BATCH
-
-Specifies that the transport should accumulate outbound messages in a
-buffer, and send them to the TIB/Rendezvous daemon when either the buffer is
-full, or a timeout is reached (programs cannot change the timeout interval).
-
-=back
-
-=head1 INTRA-PROCESS TRANSPORT
-
-The Intra-Process Transport is a special transport that is automatically
-created when a new L<Tibco::Rv|Tibco::Rv> object is created.  It is available
-as C<$Tibco::Rv::Transport::PROCESS>.  It can only be used to transport
-messages within the process it was created in.  Internal advisory messages
-are transported via this transport.
-
 =head1 SEE ALSO
 
-L<Tibco::Rv::Msg>
+L<Tibco::Rv::Transport>
 
 =head1 AUTHOR
 

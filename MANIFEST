@@ -19,6 +19,9 @@ lib/Tibco/Rv/Queue.pm
 lib/Tibco/Rv/QueueGroup.pm
 lib/Tibco/Rv/Dispatcher.pm
 lib/Tibco/Rv/Transport.pm
+lib/Tibco/Rv/Cm/Transport.pm
+lib/Tibco/Rv/Cm/Listener.pm
+lib/Tibco/Rv/Cm/Msg.pm
 t/01basic.t
 t/02field.t
 t/03message.t

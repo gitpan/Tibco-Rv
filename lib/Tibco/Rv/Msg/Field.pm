@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.02';
+$VERSION = '1.10';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -11,7 +11,7 @@ use Tibco::Rv::Msg::DateTime;
 my ( %defaults );
 BEGIN
 {
-   %defaults = ( name => undef, id => 0,
+   %defaults = ( name => '', id => 0,
       size => undef, count => undef, type => undef, data => undef );
 }
 
@@ -19,7 +19,7 @@ BEGIN
 sub new
 {
    my ( $proto ) = shift;
-   my ( %params ) = ( name => undef, id => 0 );
+   my ( %params ) = ( name => '', id => 0 );
    my ( %args ) = @_;
    map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
       unless ( exists $params{$_} ) } keys %args;
@@ -27,6 +27,7 @@ sub new
    my ( $class ) = ref( $proto ) || $proto;
    my ( $self ) = $class->_new;
 
+   $params{name} = '' unless ( defined $params{name} );
    @$self{ qw/ name id / } = @params{ qw/ name id / };
 
    my ( $status ) = Tibco::Rv::MsgField_Create( @$self{ qw/ ptr name id / } );
@@ -94,6 +95,7 @@ sub name
 sub _setName
 {
    my ( $self, $name ) = @_;
+   $name = '' unless ( defined $name );
    Tibco::Rv::MsgField_SetName( $self->{ptr}, $name );
    return $self->{name} = $name;
 }
@@ -314,7 +316,7 @@ along with a name and an id.
       id => $id
 
 Creates a C<Tibco::Rv::Msg::Field>, with name and id as given in %args
-(name defaults to C<undef> and id defaults to 0, if not specified).
+(name defaults '' and id defaults to 0, if not specified).
 C<$field> is initialized with boolean value C<Tibco::Rv::FALSE>.
 
 =back
@@ -329,7 +331,7 @@ Returns C<$field>'s name.
 
 =item $field->name( $name )
 
-Sets C<$field>'s name.
+Sets C<$field>'s name to C<$name>.  If C<$name> is C<undef>, sets name to ''.
 
 =item $id = $field->id
 

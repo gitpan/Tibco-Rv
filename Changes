@@ -45,3 +45,11 @@ Revision history for Perl extension Tibco::Rv.
 
 1.04  Wed Feb  5 16:07:24 CST 2003
 	- test harness done
+
+1.10  Sun Mar  2 23:07:44 CST 2003
+	- basic Certified Messaging implementation -- no doc, no test
+	- Dispatcher name properly defaults to 'dispatcher'
+	- Transport service/network settings properly default to ''
+	- Transport get/set description behaviour now matches C API behaviour
+	- Queue get/set name behaviour now matches C API behaviour
+	- Msg::Field get/set name behaviour causes undef to be ''

@@ -2,7 +2,7 @@ package Tibco::Rv::Msg;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.10';
 
 
 use constant FIELDNAME_MAX => 127;
@@ -46,21 +46,27 @@ use Tibco::Rv::Msg::Field;
 use overload '""' => 'toString';
 
 
+my ( %defaults );
+BEGIN
+{
+   %defaults = ( sendSubject => undef, replySubject => undef );
+}
+
+
 sub new
 {
    my ( $proto ) = shift;
-   my ( %params ) = ( sendSubject => undef, replySubject => undef );
    my ( %fields ) = ( );
    my ( %args ) = @_;
    foreach my $field ( keys %args )
    {
-      next if ( exists $params{$field} );
+      next if ( exists $defaults{$field} );
       $fields{$field} = $args{$field};
       delete $args{$field};
    }
-   %params = ( %params, %args );
+   my ( %params ) = ( %defaults, %args );
    my ( $class ) = ref( $proto ) || $proto;
-   my ( $self ) = bless { id => undef, %params };
+   my ( $self ) = $class->_new;
 
    my ( $status ) = Tibco::Rv::Msg_Create( $self->{id} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
@@ -74,6 +80,13 @@ sub new
 }
 
 
+sub _new
+{
+   my ( $class, $id ) = @_;
+   return bless { id => $id, %defaults }, $class;
+}
+
+
 sub _adopt
 {
    my ( $proto, $id ) = @_;
@@ -82,10 +95,9 @@ sub _adopt
    if ( $class )
    {
       $self->DESTROY;
-      @$self{ qw/ id sendSubject replySubject / } = ( $id, undef, undef );
+      @$self{ 'id', keys %defaults } = ( $id, values %defaults );
    } else {
-      $self = bless { id => $id,
-         sendSubject => undef, replySubject => undef }, $proto;
+      $self = $proto->_new( $id );
    }
    $self->_getValues;
    return $self;

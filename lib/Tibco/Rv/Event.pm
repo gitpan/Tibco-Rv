@@ -2,10 +2,11 @@ package Tibco::Rv::Event;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.10';
 
 
 use Tibco::Rv::Msg;
+use Tibco::Rv::Cm::Msg;
 
 
 sub new
@@ -24,6 +25,8 @@ sub new
    $self->{internal_nomsg_callback} = sub { $self->onEvent( ) };
    $self->{internal_msg_callback} =
       sub { $self->onEvent( Tibco::Rv::Msg->_adopt( shift ) ) };
+   $self->{internal_cmmsg_callback} =
+      sub { $self->onEvent( Tibco::Rv::Cm::Msg->_adopt( shift ) ) };
 
    return $self;
 }

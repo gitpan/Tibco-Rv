@@ -26,3 +26,5 @@ tibrvQueue	T_IV
 tibrvQueueGroup	T_IV
 tibrvDispatcher	T_IV
 tibrvTransport	T_IV
+tibrvcmEvent	T_IV
+tibrvcmTransport	T_IV
