@@ -1,0 +1,46 @@
+Need better test harness (t/* stuff)
+
+
+Make all constructors and factory methods of the form:
+my ( $foo ) = new Foo ( param1 => 'value', param2 => 'value', ... )
+... and add in all set parameters, such as name, limitPolicy, etc
+
+
+Gotta do something to abstract out createInbox ...
+
+
+Tibco::Rv::Msg
+Most of the get/set methods aren't implemented yet.  Kinda funny, since
+that's pretty much the whole point.
+
+
+Tibco::Rv::Dispatcher::DESTROY
+If idleTimeout is something other than WAIT_FOREVER or NO_WAIT, and that
+idleTimeout is reached, then tibrvDispatcher_Destroy is called without
+calling the Perl DESTROY method, putting the dispatcher in a bad state.  No
+fix is contemplated.  So don't access a Dispatcher after it times out.
+I'm also thinking that DESTROY will throw an exception when the Perl object
+gets garbage collected in this situation.  But that's not really a big deal.
+
+
+Tibco::Rv::Event::DESTROY
+tibrvEvent_DestroyEx has a callback, but no closure data (unlike
+tibrvQueue_DestroyEx -- I wonder why?).  Since Perl callbacks are stored
+internally in the closure data, Tibco::Rv does not support the
+tibrvEvent_DestroyEx callback.  It could be hacked in by storing the DESTROY
+callback along with the onEvent callback in a hash or something, and passing
+both callbacks into the constructor.
+
+
+tibrvMsg_SetHandlers
+Not supported.  I'm sure no one wants this stuff, anyway.
+
+
+tibrv 6.x support
+Not tried.  Maybe it'll work, maybe it won't.  I'm sure there'll have to be
+some special code to disable the secure daemon and virutal circuit code when
+running under tibrv 6.x.
+
+
+tibrv 5.x support
+Never gonna happen.

@@ -1,0 +1,14 @@
+Revision history for Perl extension Tibco::Rv.
+
+0.01  Wed Jan  8 18:36:33 2003
+	- original version; created by h2xs 1.18
+
+0.02  Wed Jan 15 11:46:40 CST 2003
+	- basic functionality
+
+0.03  Fri Jan 17 12:24:34 CST 2003
+	- renamed Tibco::Rv from Tib::Rv
+	- Basic tibrv API almost completely implemented, with one glaring
+	  exception: functions to manipulate tibrvMsg fields (only
+	  addString( ) supported)
+	- useful factory methods and looping added to Tibco::Rv object
