@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 
 sub new
@@ -76,8 +76,9 @@ convenience).
       callback => sub { ... }
 
 Creates a C<Tibco::Rv::Listener>.  If not specified, queue defaults to the
-Default Queue, transport defaults to the Intra-Process Transport, subject
-defaults to the empty string, and callback defaults to:
+L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">, transport defaults to the
+L<Intra-Process Transport|Tibco::Rv::Transport/"INTRA-PROCESS TRANSPORT">,
+subject defaults to the empty string, and callback defaults to:
 
    sub { print "Listener received: @_\n" }
 

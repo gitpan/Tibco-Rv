@@ -3,7 +3,7 @@ use base qw/ Tibco::Rv::Event /;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 
 sub new
@@ -85,12 +85,14 @@ convenience).
       callback => sub { ... }
 
 Creates a C<Tibco::Rv::Timer>.  If not specified, queue defaults to the
-Default Queue, interval defaults to 1, and callback defaults to:
+L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">, interval defaults to 1,
+and callback defaults to:
 
    sub { print "Timer fired\n" }
 
 Create a Timer to cause an event to fire after every C<$interval> seconds.
-When C<$queue> dispatches such an event, it triggers the given callback.
+The C<$interval> can specify fractions of a second.  When C<$queue>
+dispatches such an event, it triggers the given callback.
 
 =back
 
@@ -118,7 +120,7 @@ Returns the callback code reference.
 =item $timer->onEvent
 
 Trigger an event directly.  The event will be processed as if it was
-triggereed via the event queue.
+triggered via the event queue.
 
 =item $timer->DESTROY
 

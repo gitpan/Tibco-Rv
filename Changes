@@ -32,3 +32,8 @@ Revision history for Perl extension Tibco::Rv.
 	- Backwards-compatible with TIB/Rendezvous 6.x via TIBRV_VERISON_MAJOR
 	  variable in Rv.pm (build-time option)
 	- documentation ~ 60% done
+
+1.02  Mon Feb  3 10:54:24 CST 2003
+	- Changed TIBRV_VERSION_MAJOR to TIBRV_VERSION_RELEASE
+	- Fixed Dispatcher bug that snuck into 1.00
+	- documentation done

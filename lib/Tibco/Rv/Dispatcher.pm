@@ -2,13 +2,13 @@ package Tibco::Rv::Dispatcher;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 
 sub new
 {
    my ( %proto ) = shift;
-   my ( %params ) = ( name => undef, dispatchable => undef,
+   my ( %params ) = ( name => undef, dispatchable => $Tibco::Rv::Queue::DEFAULT,
       idleTimeout => Tibco::Rv::WAIT_FOREVER );
    my ( %args ) = @_;
    map { Tibco::Rv::die( Tibco::Rv::INVALID_ARG )
@@ -18,7 +18,7 @@ sub new
    my ( $self ) = bless { id => undef, %params }, $class;
 
    my ( $status ) = Tibco::Rv::Dispatcher_Create( $self->{id},
-      $dispatchable->{id}, $self->{idleTimeout} );
+      $self->{dispatchable}{id}, $self->{idleTimeout} );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
    $self->name( $params{name} ) if ( defined $params{name} );
 
@@ -72,11 +72,85 @@ Tibco::Rv::Dispatcher - Tibco Queue dispatching thread
 
 =head1 SYNOPSIS
 
+   $queue = $rv->createQueue;
+   $dispatcher = new Tibco::Rv::Dispatcher( dispatchable => $queue );
+
 =head1 DESCRIPTION
+
+A C<Tibco::Rv::Dispatcher> object is an independent thread that repeatedly
+dispatches events waiting on the specified dispatchable.  A dispatchable
+is either a L<Tibco::Rv::Queue|Tibco::Rv::Queue> or a
+L<Tibco::Rv::QueueGroup|Tibco::Rv::QueueGroup>.
 
 =head1 CONSTRUCTOR
 
+=over 4
+
+=item $dispatcher = new Tibco::Rv::Dispatcher( %args )
+
+   %args:
+      dispatchable => $dispatchable,
+      name => $name,
+      idleTimeout => $idleTimeout
+
+Creates a C<Tibco::Rv::Dispatcher>.  If not specified, dispatchable defaults
+to the L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE">, name defaults to
+C<undef>, and idleTimeout defaults to C<Tibco::Rv::WAIT_FOREVER>.
+
+Upon creating C<$dispatcher>, it starts a separate thread, which repeatedly
+calls C<timedDispatch> on C<$dispatchable>, passing it the C<$idleTimeout>
+value.  The thread exits after C<$idleTimeout> seconds have passed without
+any events being placed on the C<$dispatchable>.  C<$idleTimeout> can
+specify fractional seconds.
+
+If C<$idleTimeout> is C<Tibco::Rv::WAIT_FOREVER> (the default value), then
+C<$dispatcher> continues dispatching events until DESTROY is called or the
+program exits -- when no events are waiting on the C<$dispatchable> in this
+case, C<$dispatcher> simply blocks.  If C<$idleTimeout> is
+C<Tibco::Rv::NO_WAIT>, then C<$dispatcher> dispatches events until no
+events are waiting on C<$dispatchable>, at which point the thread exits.
+
+=back
+
 =head1 METHODS
+
+=over 4
+
+=item $dispatchable = $dispatcher->dispatchable
+
+Returns the L<Queue|Tibco::Rv::Queue> or L<QueueGroup|Tibco::Rv::QueueGroup>
+that C<$dispatcher> is dispatching events on.
+
+=item $idleTimeout = $dispatcher->dispatchable
+
+Returns the idleTimeout value C<$dispatcher> is using to call C<timedDispatch>
+on its dispatchable.
+
+=item $name = $dispatcher->name
+
+Returns the name of C<$dispatcher>.
+
+=item $dispatcher->name( $name )
+
+Sets C<$dispatcher>'s name to C<$name>.  Use this to distinguish multiple
+dispatchers and assist troubleshooting.
+
+=item $dispatcher->DESTROY
+
+Exits the thread and destroys C<$dispatcher>.  Called automatically at
+program exit.
+
+=back
+
+=head1 SEE ALSO
+
+=over 4
+
+=item L<Tibco::Rv::Queue>
+
+=item L<Tibco::Rv::QueueGroup>
+
+=back
 
 =head1 AUTHOR
 

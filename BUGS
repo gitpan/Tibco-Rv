@@ -13,6 +13,12 @@ Virtual Circuits unimplemented
 Secure Daemon connections unimplemented
 
 
+IO should probably take socketId => \*GLOB instead of a fileno
+
+
+Queue hook should maybe be set up like Event's onEvent callback?
+
+
 Gotta do something to abstract out createInbox ...
 
 

@@ -1,12 +1,12 @@
 package Tibco::Rv;
 
 
-use vars qw/ $VERSION $TIBRV_VERSION_MAJOR /;
+use vars qw/ $VERSION $TIBRV_VERSION_RELEASE /;
 
 BEGIN
 {
-   $VERSION = '1.01';
-   $TIBRV_VERSION_MAJOR = 7;
+   $VERSION = '1.02';
+   $TIBRV_VERSION_RELEASE = 7;
    my ( $env_err ) = q/one of: TIB_HOME, TIB_RV_HOME, or TIBRV_DIR must be set
 TIB_HOME must be your base Tibco directory, and it must contain "tibrv"; or:
 TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
@@ -27,7 +27,7 @@ TIB_RV_HOME or TIBRV_DIR must be your Rendezvous installation directory
 use Inline C => Config =>
    AUTO_INCLUDE => <<END,
 #include <tibrv/tibrv.h>
-#define TIBRV_VERSION_MAJOR $TIBRV_VERSION_MAJOR
+#define TIBRV_VERSION_RELEASE $TIBRV_VERSION_RELEASE
 END
    AUTOWRAP => 'ENABLE',
    TYPEMAPS => 'typemap',
@@ -291,9 +291,13 @@ arguments.  Supply C<undef> (or supply nothing) as the arguments to create a
 Default Transport connection to a Rendezvous daemon running under the default
 service/network/daemon settings.
 
-See L<Tibco::Rv::Transport> for information on the Intra-Process Transport.
+See the Transport documentation section on the
+L<Intra-Process Transport|Tibco::Rv::Transport/"INTRA-PROCESS TRANSPORT">
+for information on the Intra-Process Transport.
 
-See L<Tibco::Rv::Queue> for information on the Default Queue.
+See the Queue documentation section on the
+L<Default Queue|Tibco::Rv::Queue/"DEFAULT QUEUE"> for information on the
+Default Queue.
 
 See L<Tibco::Rv::QueueGroup> for information on QueueGroups.
 
@@ -605,10 +609,10 @@ Non-blocking wait on event dispatch calls (returns immediately)
 
 Programmatically access the installed version of Tibco::Rv, in the form 'x.xx'
 
-=item Tibco::Rv::TIBRV_VERSION_MAJOR => <build option>
+=item Tibco::Rv::TIBRV_VERSION_RELEASE => <build option>
 
 Programmatically access the major version of TIB/Rendezvous.  For instance,
-TIBRV_VERSION_MAJOR = 7 for all releases in the Rv 7.x series, or 6 for
+TIBRV_VERSION_RELEASE = 7 for all releases in the Rv 7.x series, or 6 for
 all releases in the Rv 6.x series.  This allows for backwards compatibility
 when building Tibco::Rv against any version of tibrv, 6.x or later.
 
@@ -765,7 +769,7 @@ tibrv_status tibrvTransport_SendReply( tibrvTransport transport,
    tibrvMsg reply, tibrvMsg request ); 
 tibrv_status tibrvTransport_SetDescription( tibrvTransport transport,
    const char * description ); 
-#if TIBRV_VERSION_MAJOR >= 7
+#if TIBRV_VERSION_RELEASE >= 7
 tibrv_status tibrvTransport_SetBatchMode( tibrvTransport transport,
    tibrvTransportBatchMode mode ); 
 #endif

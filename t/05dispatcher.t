@@ -22,7 +22,7 @@ eval
 };
 if ( $@ )
 {
-   ( $Tibco::Rv::TIBRV_VERSION_MAJOR < 7 &&
+   ( $Tibco::Rv::TIBRV_VERSION_RELEASE < 7 &&
       $@ == Tibco::Rv::VERSION_MISMATCH ) ? &ok : &nok;
 }
 

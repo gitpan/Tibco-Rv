@@ -2,7 +2,7 @@ package Tibco::Rv::Msg::Field;
 
 
 use vars qw/ $VERSION /;
-$VERSION = '1.01';
+$VERSION = '1.02';
 
 
 use Tibco::Rv::Msg::DateTime;
@@ -354,7 +354,7 @@ xml or opaque fields, this is the total number of bytes).
 =item $type = $field->type
 
 Returns the
-L<Tibco::Msg Message Type Constant|Tibco::Msg/"MESSAGE TYPE CONSTANTS">
+L<Tibco::Rv::Msg Message Type Constant|Tibco::Rv::Msg/"MESSAGE TYPE CONSTANTS">
 representing the type of data contained in the field.
 
 =item $value = $field-><type>
