@@ -2,7 +2,7 @@ package Tibco::Rv::QueueGroup;
 
 
 use vars qw/ $VERSION @CARP_NOT /;
-$VERSION = '1.04';
+$VERSION = '1.05';
 
 
 use Tibco::Rv::Queue;
@@ -86,7 +86,7 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{id} );
 
-   my ( $status ) = QueueGroup_Destroy( $self->{id} );
+   my ( $status ) = tibrvQueueGroup_Destroy( $self->{id} );
    delete $self->{id};
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }

@@ -77,3 +77,9 @@ Revision history for Perl extension Tibco::Rv.
 	- fixed bug in eg/tibrvsend.pl
 	- added eg/version.pl
 	- updated copyright notices
+
+1.15 Sun Jul 17 14:22:18 PDT 2005
+	- fixed bug in QueueGroup::DESTROY (was not properly calling
+	  tibrvQueueGroup_Destroy)
+	- fixed bug in Rv::DESTROY so that the default transport and queueGroup
+	  are deleted prior to tibrv_Close being called

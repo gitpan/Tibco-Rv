@@ -2,7 +2,7 @@ package Tibco::Rv;
 
 
 use vars qw/ $VERSION @CARP_NOT /;
-$VERSION = '1.14';
+$VERSION = '1.15';
 
 
 use Inline with => 'Tibco::Rv::Inline';
@@ -230,8 +230,8 @@ sub DESTROY
    my ( $self ) = @_;
    return unless ( exists $self->{created} );
 
-   my ( $status ) = tibrv_Close( );
    delete @$self{ keys %$self };
+   my ( $status ) = tibrv_Close( );
    Tibco::Rv::die( $status ) unless ( $status == Tibco::Rv::OK );
 }
 
